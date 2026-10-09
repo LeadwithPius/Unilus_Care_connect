@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNILUS CareConnect App</title>
+    <style>
+        :root {
+            --unilus-green: #0F4C3A;
+            --calm-teal: #2A6F6B;
+            --clinical-mint: #E1EDEA;
+            --sage: #DCEAE4;
+            --sand: #F3EBDD;
+            --mist: #F7FAF8;
+            --coral: #C4553D;
+            --amber: #D99A2B;
+            --ink: #1E2B30;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--mist);
+            color: var(--ink);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Mobile App Frame */
+        .app-container {
+            width: 100%;
+            max-width: 410px;
+            height: 840px;
+            background: white;
+            border-radius: 36px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            overflow: hidden;
+            border: 10px solid #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* App Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            background: white;
+        }
+
+        .sos-btn {
+            background-color: var(--coral);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* Screen Views */
+        .screen {
+            flex: 1;
+            overflow-y: auto;
+            display: none;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: var(--mist);
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Common Components */
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .logo-sm {
+            width: 40px;
+            height: 40px;
+            background-color: var(--sage);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--calm-teal);
+            font-weight: bold;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #eee;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary { background-color: var(--calm-teal); color: white; }
+        .btn-danger { background-color: var(--coral); color: white; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-top: 4px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+
+        /* Sidebar Navigation Drawer for Counsellor */
+        .drawer {
+            position: absolute;
+            top: 0;
+            left: -280px;
+            width: 260px;
+            height: 100%;
+            background: var(--unilus-green);
+            color: white;
+            transition: left 0.3s ease;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .drawer.open { left: 0; }
+        .drawer-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; font-size: 14px; }
+        .drawer-item:hover { color: var(--sage); }
+
+        .menu-icon { font-size: 20px; cursor: pointer; margin-right: 10px; }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+
+        .nav-item {
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            cursor: pointer;
+        }
+        .nav-item.active { color: var(--calm-teal); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <span>UNILUS CareConnect</span>
+        <span class="sos-btn" onclick="alert('Emergency Crisis Hotline: Dialing or connecting instantly...')">SOS</span>
+    </div>
+
+    <!-- Counsellor Sidebar Drawer -->
+    <div id="counsellorDrawer" class="drawer">
+        <div>
+            <h3>Counsellor Menu</h3>
+            <div class="drawer-item" onclick="switchView('counsellor-dashboard')">📊 Dashboard & Triage</div>
+            <div class="drawer-item" onclick="switchView('counsellor-profile')">👤 My Professional Profile</div>
+            <div class="drawer-item" onclick="switchView('student-progress')">📈 Student Progress & Stats</div>
+            <div class="drawer-item" onclick="switchView('calendar-sync')">📅 Calendar & Google Sync</div>
+        </div>
+        <div class="drawer-item" onclick="logout()" style="color: #ff8b8b;">🚪 Log Out</div>
+    </div>
+
+    <!-- VIEW 1: Public Face (Vibrant & Engaging) -->
+    <div id="view-public" class="screen active">
+        <div class="header-brand">
+            <div class="logo-sm">C❤️</div>
+            <div>
+                <h2 style="margin:0; font-size:18px; color:var(--unilus-green);">CareConnect</h2>
+                <small style="color:#666;">UNILUS Student Wellness</small>
+            </div>
+        </div>
+
+        <!-- Fun Greeting Banner -->
+        <div style="background: linear-gradient(135deg, var(--calm-teal), var(--unilus-green)); color: white; padding: 16px; border-radius: 16px; margin-bottom: 14px;">
+            <h3 style="margin: 0 0 4px 0; font-size: 18px;">Let's learn about mental health today! 🌟</h3>
+            <p style="margin: 0; font-size: 12px; opacity: 0.9;">Your space to breathe, grow, and thrive.</p>
+        </div>
+
+        <!-- Options with Short Hooks -->
+        <div class="card" style="background: var(--clinical-mint); cursor: pointer;" onclick="alert('Opening MindQuest Games...')">
+            <h4 style="margin: 0 0 2px 0; color: var(--unilus-green);">🎮 Games</h4>
+            <p style="margin: 0; font-size: 12px; color: #444;">Play, swap thoughts, and beat stress in minutes!</p>
+        </div>
+
+        <div class="card" style="background: var(--sand); cursor: pointer;" onclick="alert('Opening Articles...')">
+            <h4 style="margin: 0 0 2px 0; color: #8C6D33;">📖 Articles</h4>
+            <p style="margin: 0; font-size: 12px; color: #444;">Quick reads to clear your mind and boost focus.</p>
+        </div>
+
+        <div class="card" style="background: #E8F4F8; cursor: pointer;" onclick="alert('Opening Videos...')">
+            <h4 style="margin: 0 0 2px 0; color: #2B6CB0;">🎥 Videos</h4>
+            <p style="margin: 0; font-size: 12px; color: #444;">Short, soothing visual guides made for students.</p>
+        </div>
+
+        <!-- Clean Login Card -->
+        <div class="card">
+            <h4 style="margin: 0 0 4px 0;">Sign In</h4>
+            <p style="font-size: 11px; color: #666; margin-bottom: 8px;">Students & counsellors log in here.</p>
+            <label style="font-size: 11px;">User ID / Email</label>
+            <input type="text" id="loginId" placeholder="e.g. student or counsellor ID">
+            <label style="font-size: 11px;">Password</label>
+            <input type="password" placeholder="••••••••">
+            <button class="btn btn-primary" style="padding: 10px; margin-top: 4px;" onclick="handleLogin()">Sign In</button>
+        </div>
+    </div>
+
+    <!-- VIEW 2: Counsellor Dashboard & Triage -->
+    <div id="counsellor-dashboard" class="screen">
+        <div style="display:flex; align-items:center; margin-bottom:15px;">
+            <span class="menu-icon" onclick="toggleDrawer()">☰</span>
+            <h3 style="margin:0;">Counsellor Triage & Schedule</h3>
+        </div>
+
+        <div class="card" style="background:var(--sand);">
+            <strong>Emergency Control:</strong><br>
+            <small>Freeze schedule or trigger walk-in rebooking alerts[cite: 9].</small>
+            <button class="btn btn-danger" style="margin-top:8px; padding:6px;" onclick="alert('Emergency mode active. Upcoming slots frozen.')">Trigger Emergency Mode</button>
+        </div>
+
+        <div class="card">
+            <h4>Priority Queue (Pseudonymous IDs)[cite: 9]</h4>
+            <div style="font-size:13px; padding:8px 0; border-bottom:1px solid #eee;">
+                🔴 <b>Student #C09</b> - High / Crisis[cite: 9]<br>
+                <button class="btn btn-primary" style="margin-top:6px; padding:6px;" onclick="alert('Opening encrypted session notes & triage form...')">Open Session</button>
+            </div>
+            <div style="font-size:13px; padding:8px 0;">
+                🟡 <b>Student #B17</b> - Psycho-social Support[cite: 9]<br>
+                <button class="btn btn-primary" style="margin-top:6px; padding:6px;" onclick="alert('Opening session details...')">View Details</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 3: Counsellor Profile Management -->
+    <div id="counsellor-profile" class="screen">
+        <div style="display:flex; align-items:center; margin-bottom:15px;">
+            <span class="menu-icon" onclick="toggleDrawer()">☰</span>
+            <h3 style="margin:0;">Professional Profile</h3>
+        </div>
+
+        <div class="card" style="text-align:center;">
+            <div style="width:70px; height:70px; background:#ccc; border-radius:50%; margin:0 auto 10px auto; display:flex; align-items:center; justify-content:center; font-size:24px;">👨‍⚕️</div>
+            <h4 style="margin:0;">Mr. Lungu[cite: 3]</h4>
+            <small style="color:#666;">Senior Certified University Counsellor</small>
+        </div>
+
+        <div class="card">
+            <label>Biography & Experience</label>
+            <textarea rows="3">Specialized in adolescent psychology, academic pressure management, and cognitive behavioral therapy with over 8 years in student wellness.</textarea>
+
+            <label>Upload Certification / License</label>
+            <input type="file">
+
+            <label>Social / Professional Links (Max 3)</label>
+            <input type="text" placeholder="LinkedIn Profile URL">
+            <input type="text" placeholder="ResearchGate / Professional site">
+            <input type="text" placeholder="Twitter / X handle">
+
+            <button class="btn btn-primary" onclick="alert('Profile updated successfully!')">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- VIEW 4: Student Progress & Analytics -->
+    <div id="student-progress" class="screen">
+        <div style="display:flex; align-items:center; margin-bottom:15px;">
+            <span class="menu-icon" onclick="toggleDrawer()">☰</span>
+            <h3 style="margin:0;">Student Progress & Reports</h3>
+        </div>
+
+        <div class="card">
+            <h4>Student #B17 Summary</h4>
+            <p style="font-size:13px; margin:4px 0;">Sessions Attended: <b>3</b> | Remaining: <b>2</b></p>
+            <p style="font-size:13px; margin:4px 0;">Performance Rate: <b>Stable / Improving</b></p>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn btn-primary" onclick="alert('Initiating masked VoIP call...')">📞 Call Student</button>
+                <button class="btn" style="background:var(--sage); color:var(--unilus-green);" onclick="alert('Opening secure text triage...')">💬 Text / Chat</button>
+            </div>
+        </div>
+
+        <div class="card" style="background:var(--clinical-mint);">
+            <h4>Anonymised Department Statistics ($n \ge 5$ Privacy Rule)[cite: 6, 9]</h4>
+            <p style="font-size:12px; color:#555;">Small groups under 5 students are automatically hidden to protect identity[cite: 9].</p>
+            <button class="btn btn-primary" onclick="alert('Exporting anonymised advisor report PDF...')">Export Advisor Report</button>
+        </div>
+    </div>
+
+    <!-- VIEW 5: Calendar Sync -->
+    <div id="calendar-sync" class="screen">
+        <div style="display:flex; align-items:center; margin-bottom:15px;">
+            <span class="menu-icon" onclick="toggleDrawer()">☰</span>
+            <h3 style="margin:0;">Schedule & Calendar Sync</h3>
+        </div>
+        <div class="card">
+            <h4>Sync with Phone & Google Schedule</h4>
+            <p style="font-size:13px; color:#555;">Automatically map your counselling availability slots directly to your external device calendar.</p>
+            <button class="btn btn-primary" onclick="alert('Successfully synced with Google Calendar / Phone Schedule!')">Sync with Google Calendar</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation for Public view -->
+    <div id="public-nav" class="bottom-nav">
+        <div class="nav-item active">Home</div>
+        <div class="nav-item" onclick="alert('Navigate to Learn / MindQuest')">Learn</div>
+        <div class="nav-item" onclick="alert('Navigate to Support booking')">Support</div>
+        <div class="nav-item" onclick="alert('Navigate to Profile settings')">Me</div>
+    </div>
+</div>
+
+<script>
+    function handleLogin() {
+        const val = document.getElementById('loginId').value.trim().toLowerCase();
+        if(val === 'counsellor' || val === 'lungu' || val === 'sishemi') {
+            document.getElementById('view-public').classList.remove('active');
+            document.getElementById('public-nav').style.display = 'none';
+            document.getElementById('counsellor-dashboard').classList.add('active');
+            alert('Logged in successfully as Counsellor. Use the menu icon (☰) at the top-left to access your sidebar tools!');
+        } else {
+            alert('Logged in as Student! (To test counsellor features, type "counsellor" into the ID field).');
+        }
+    }
+
+    function toggleDrawer() {
+        document.getElementById('counsellorDrawer').classList.toggle('open');
+    }
+
+    function switchView(viewId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        toggleDrawer();
+    }
+
+    function logout() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('view-public').classList.add('active');
+        document.getElementById('public-nav').style.display = 'flex';
+        toggleDrawer();
+    }
+</script>
+</body>
+</html>
