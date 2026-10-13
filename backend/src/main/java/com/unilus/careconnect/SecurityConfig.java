@@ -16,16 +16,32 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
+
         http
             .csrf(csrf -> csrf.disable())
+
             .authorizeHttpRequests(auth -> auth
+
                 .requestMatchers(
-                    "/api/health",
-                    "/api/students/register"
+                        "/api/health",
+                        "/api/students/register"
                 ).permitAll()
-                .anyRequest().authenticated()
+
+                .requestMatchers("/api/admin/**")
+                .hasRole("ADMIN")
+
+                .requestMatchers("/api/appointments/**")
+                .hasRole("STUDENT")
+
+                .requestMatchers("/api/auth/**")
+                .authenticated()
+
+                .anyRequest()
+                .authenticated()
             )
+
             .httpBasic(basic -> {});
 
         return http.build();
