@@ -1,8 +1,7 @@
 package com.unilus.careconnect;
 
-import com.unilus.careconnect.dto.StudentRegistrationRequest;
-import com.unilus.careconnect.entity.Student;
-import com.unilus.careconnect.service.StudentService;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import com.unilus.careconnect.dto.StudentRegistrationRequest;
+import com.unilus.careconnect.entity.Student;
+import com.unilus.careconnect.service.StudentService;
 
 @RestController
 @RequestMapping("/api/students")
@@ -38,9 +39,10 @@ public class StudentController {
                     Map.of(
                             "message", "Student registered successfully!",
                             "studentId", student.getId(),
-                            "fullName", student.getFullName(),
-                            "email", student.getEmail(),
-                            "studentNumber", student.getStudentNumber()
+                            "fullName", request.getFullName(),
+                            "email", request.getEmail(),
+                            "studentNumber", request.getStudentNumber(),
+                            "createdAt", student.getCreatedAt()
                     )
             );
 
@@ -50,4 +52,4 @@ public class StudentController {
             );
         }
     }
-} 
+}

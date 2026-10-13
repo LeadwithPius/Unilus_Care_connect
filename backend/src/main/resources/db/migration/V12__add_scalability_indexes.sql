@@ -4,7 +4,7 @@ CREATE INDEX IF NOT EXISTS appointments_status_scheduled_idx
 
 CREATE INDEX IF NOT EXISTS appointments_support_category_idx
     ON wellness.appointments (support_category_id);
-q
+
 
 CREATE INDEX IF NOT EXISTS appointments_active_student_schedule_idx
     ON wellness.appointments
