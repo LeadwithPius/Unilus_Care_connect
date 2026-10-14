@@ -1,14 +1,13 @@
+
 package com.unilus.careconnect;
 
 import com.unilus.careconnect.dto.StudentRegistrationRequest;
-import com.unilus.careconnect.entity.Student;
+import com.unilus.careconnect.entity.UserAccount;
 import com.unilus.careconnect.service.StudentService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -27,7 +26,7 @@ public class StudentController {
             @RequestBody StudentRegistrationRequest request) {
 
         try {
-            Student student = studentService.registerStudent(
+            UserAccount user = studentService.registerStudent(
                     request.getFullName(),
                     request.getEmail(),
                     request.getStudentNumber(),
@@ -37,15 +36,18 @@ public class StudentController {
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     Map.of(
                             "message", "Student registered successfully!",
-                            "studentId", student.getId(),
-                            "fullName", student.getFullName(),
-                            "email", student.getEmail(),
-                            "studentNumber", student.getStudentNumber()
+                            "userId", user.getId(),
+                            "email", user.getEmail()
                     )
             );
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(
+                    Map.of("error", e.getMessage())
+            );
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
                     Map.of("error", e.getMessage())
             );
         }
