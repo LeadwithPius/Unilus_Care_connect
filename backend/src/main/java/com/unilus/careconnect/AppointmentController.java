@@ -285,4 +285,4 @@ public class AppointmentController {
             this.status = status;
         }
     }
-} 
+}
