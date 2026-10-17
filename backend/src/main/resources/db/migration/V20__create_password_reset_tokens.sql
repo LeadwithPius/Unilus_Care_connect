@@ -1,7 +1,3 @@
--- Password-reset tokens are stored as SHA-256 hashes, never as raw reset tokens.
--- The backend must generate a cryptographically secure random token, email the raw
--- token to the user, and persist only its hash here.
-
 CREATE TABLE credentials.password_reset_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
