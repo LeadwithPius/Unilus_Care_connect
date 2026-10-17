@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>UNILUS CareConnect · Home</title>
+    <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+    <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script src="../../Frontend_Material/Shared/wellbeing_checkin.js"></script>
+<script>
+    // Home: welcome card and shortcuts.
+    function view(){return `<div class="hero"><h2 style="color:#fff">You’re not alone here</h2><div class="small" style="color:#cfe3df">Private, anonymous support from UNILUS counsellors. No downloads, no names.</div></div>
+ <div class="card"><h3>How are you today?</h3><div class="small">A 1-minute, non-diagnostic check-in.</div><button class="btn" data-a="checkin">Take wellbeing check-in</button></div>
+ <div class="card"><h3>Need a moment?</h3><div class="small">Breathing, a self-care pet and a grounding game.</div><button class="btn o" data-a="learn">Open wellness toolkit</button></div>
+ <div class="card"><h3>Talk to a counsellor</h3><div class="small">Face-to-face on campus, or call/chat with a short reason.</div><button class="btn o" data-a="support">Book appointment</button></div>`}
+    function act(a){if(a==='checkin')checkin();else go(a)}
+    CC.mount({role:'s',title:'Home',nav:'home',root:'../../',view,act});
+</script></body></html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UNILUS CareConnect · Education hub</title>
+  <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+  <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script src="../../Frontend_Material/Shared/wellness_tools.js"></script>
+<script src="../../Frontend_Material/Shared/learning_game.js"></script>
+<script>
+  // Education Hub: the first screen a student sees after logging in.
+  function view(){return `<h2>Education hub</h2><div class="small" style="margin-bottom:10px">Learn at your own pace. Nothing here is recorded against your name.</div>`+Object.keys(TOPICS).map(k=>`<button class="opt" data-topic="${k}">${k}<small>Tap to read</small></button>`).join('')+
+          `<h3 style="margin-top:14px">Wellness toolkit</h3>
+ <button class="opt" data-a="breathe">🫁 Breathe<small>Guided breathing for focus and calm</small></button>
+ <button class="opt" data-a="finch">🐣 Finch<small>Look after your pet by looking after yourself</small></button>
+ <button class="opt" data-a="snake">🐍 Snake Xenzia<small>Retro grounding game to interrupt panic loops</small></button><h3 style="margin-top:14px">Learning</h3><button class="opt" data-a="game">🎯 20-section game<small>${gd()}/20 sections complete</small></button><button class="opt" data-a="videos">▶️ Video tutorials<small>Short visual lessons</small></button>`}
+  function act(a){({breathe,finch,snake,game,videos})[a]()}
+  function after(){document.querySelectorAll('[data-topic]').forEach(b=>b.onclick=()=>modal(`<h3>${b.dataset.topic}</h3><p class="small">${TOPICS[b.dataset.topic]}</p><button class="btn" onclick="close_()">Close</button>`))}
+  CC.mount({role:'s',title:'Education hub',nav:'learn',root:'../../',view,act,after});
+</script></body></html>

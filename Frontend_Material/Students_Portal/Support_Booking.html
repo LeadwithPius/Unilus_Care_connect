@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>UNILUS CareConnect · Support</title>
+    <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+    <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script>
+    // Support: book a session (category, consent, mode, counsellor, time). Also used to reschedule.
+    function view(){
+        const s=S.step;
+        const head=`<h2>Book a session</h2><div class="small" style="margin-bottom:10px">Step ${Math.min(s+1,5)} of 5</div>`;
+        if(S.booked&&s===0)return `<div class="card"><h3>You already have a session</h3><div class="small">${S.slot}, ${S.mode}, with ${S.cns}.</div><button class="btn r" data-a="cancel">Cancel appointment</button></div>`;
+        if(s===0)return head+['Academic Pressure','Psycho-social','Substance & Drug Support'].map(c=>`<button class="opt ${S.cat===c?'on':''}" data-cat="${c}">${c}</button>`).join('')+`<button class="btn" ${S.cat?'':'disabled'} data-a="next">Continue</button>`;
+        if(s===1)return head+`<div class="card"><h3>Before we continue</h3><div class="small">Your name and student number are never stored with your records. Only an anonymous token links your sessions. Counsellors see a student tag like #B17. Notes are encrypted. Reports hide any group smaller than 5.</div><label class="small" style="display:flex;gap:8px;margin-top:10px"><input type="checkbox" id="cons" ${S.consent?'checked':''}> I understand and agree</label></div><button class="btn" id="cn" ${S.consent?'':'disabled'} data-a="next">Agree and continue</button>`;
+        if(s===2)return head+['Face-to-Face','Voice Call','Chat'].map(m=>`<button class="opt ${S.mode===m?'on':''}" data-mode="${m}">${m}${m==='Face-to-Face'?'<small>On-campus clinic (default)</small>':'<small>Needs a short written reason</small>'}</button>`).join('')+
+            (S.mode!=='Face-to-Face'?`<textarea id="why" placeholder="Why can’t you come to the clinic? (e.g. off-campus, unwell)">${S.why}</textarea>`:'')+`<button class="btn" id="mn" data-a="next">Continue</button>`;
+        if(s===3)return head+CNS.map((c,i)=>{const t=cstat(i);return `<button class="opt ${S.cns===c.n?'on':''}" data-cns="${c.n}" ${t[0]==='Emergency'?'disabled style="opacity:.55"':''}><b>${c.n}</b><span class="pill" style="background:${t[1]};padding:2px 8px;font-size:11px;margin-left:8px">${t[0]}</span><small>${c.s}</small><small>${t[2]}</small><small>${c.l}</small></button>`}).join('')+`<button class="btn" ${S.cns?'':'disabled'} data-a="next">Continue</button>`;
+        if(s===4)return head+(S.frozen?'<div class="card small">This counsellor’s schedule is paused. Please choose another.</div>':'')+SLOTS.map(x=>`<button class="opt ${S.slot===x?'on':''}" data-slot="${x}">${x}</button>`).join('')+`<button class="btn" ${S.slot?'':'disabled'} data-a="confirm">Confirm booking</button>`;
+    }
+    function act(a){
+        if(a==='next'){if(S.step===2&&S.mode!=='Face-to-Face'){S.why=$('why').value.trim();if(S.why.length<5)return toast('Please add a short reason to use call or chat.')}S.step++;return render()}
+        if(a==='confirm'){const re=S.re;S.re=false;S.booked=true;S.step=0;if(re){S.transfers++;S.cin=S.cout=''}S.flash=re?'Rescheduled. Your counsellor was notified.':'Booked. A confirmation is on your profile.';return go('me')}
+        if(a==='cancel'){S.booked=false;S.cin=S.cout='';S.transfers=0;S.cat=S.cns=S.slot='';S.consent=false;S.step=0;render()}
+    }
+    function after(){
+        const q=(s,f)=>document.querySelectorAll(s).forEach(f);
+        q('[data-cat]',b=>b.onclick=()=>{S.cat=b.dataset.cat;render()});
+        q('[data-mode]',b=>b.onclick=()=>{S.why=($('why')||{}).value||S.why;S.mode=b.dataset.mode;render()});
+        q('[data-cns]',b=>b.onclick=()=>{S.cns=b.dataset.cns;render()});
+        q('[data-slot]',b=>b.onclick=()=>{S.slot=b.dataset.slot;render()});
+        const c=$('cons');if(c)c.onchange=()=>{S.consent=c.checked;$('cn').disabled=!c.checked;save()};
+    }
+    CC.mount({role:'s',title:'Support',nav:'support',root:'../../',view,act,after});
+</script></body></html>
