@@ -1,150 +1,249 @@
-
 package com.unilus.careconnect.service;
 
-import com.unilus.careconnect.entity.CounsellorAvailability;
-import com.unilus.careconnect.entity.CounsellorProfile;
-import com.unilus.careconnect.repository.CounsellorAvailabilityRepository;
-import com.unilus.careconnect.repository.CounsellorProfileRepository;
-
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
-import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class CounsellorAvailabilityService {
 
-    private final CounsellorAvailabilityRepository availabilityRepository;
-    private final CounsellorProfileRepository counsellorProfileRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public CounsellorAvailabilityService(
-            CounsellorAvailabilityRepository availabilityRepository,
-            CounsellorProfileRepository counsellorProfileRepository) {
-        this.availabilityRepository = availabilityRepository;
-        this.counsellorProfileRepository = counsellorProfileRepository;
+    public CounsellorAvailabilityService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    private CounsellorProfile getActiveCounsellor(Long profileId) {
-        if (profileId == null || profileId <= 0) {
+    public record AvailabilitySlot(
+            UUID id,
+            UUID counsellorProfileId,
+            OffsetDateTime startsAt,
+            OffsetDateTime endsAt,
+            String status,
+            OffsetDateTime createdAt
+    ) {
+    }
+
+    private void ensureCounsellorExists(UUID profileId) {
+
+        if (profileId == null) {
             throw new IllegalArgumentException(
                     "A valid counsellor profile ID is required."
             );
         }
 
-        CounsellorProfile profile = counsellorProfileRepository
-                .findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Counsellor profile not found."
-                ));
+        List<UUID> matches = jdbcTemplate.query(
+                """
+                SELECT id
+                FROM credentials.counsellor_profiles
+                WHERE id = ?
+                """,
+                (rs, rowNum) ->
+                        rs.getObject("id", UUID.class),
+                profileId
+        );
 
-        if (!"ACTIVE".equalsIgnoreCase(profile.getAccountStatus())) {
-            throw new IllegalStateException(
-                    "Only approved and active counsellors can manage availability."
+        if (matches.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Counsellor profile not found."
             );
         }
-
-        return profile;
     }
 
     @Transactional(readOnly = true)
-    public List<CounsellorAvailability> getAvailability(
-            Long profileId,
-            boolean availableOnly) {
+    public List<AvailabilitySlot> getAvailability(
+            UUID profileId,
+            boolean openOnly) {
 
-        getActiveCounsellor(profileId);
+        ensureCounsellorExists(profileId);
 
-        if (availableOnly) {
-            return availabilityRepository
-                    .findByCounsellorProfileIdAndAvailableTrueOrderByDayOfWeekAscStartTimeAsc(
-                            profileId
-                    );
+        String sql;
+
+        if (openOnly) {
+            sql = """
+                    SELECT
+                        id,
+                        counsellor_profile_id,
+                        starts_at,
+                        ends_at,
+                        status,
+                        created_at
+                    FROM wellness.availability_slots
+                    WHERE counsellor_profile_id = ?
+                      AND status = 'OPEN'
+                      AND starts_at > CURRENT_TIMESTAMP
+                    ORDER BY starts_at
+                    """;
+        } else {
+            sql = """
+                    SELECT
+                        id,
+                        counsellor_profile_id,
+                        starts_at,
+                        ends_at,
+                        status,
+                        created_at
+                    FROM wellness.availability_slots
+                    WHERE counsellor_profile_id = ?
+                    ORDER BY starts_at
+                    """;
         }
 
-        return availabilityRepository
-                .findByCounsellorProfileIdOrderByDayOfWeekAscStartTimeAsc(
-                        profileId
-                );
+        return jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> new AvailabilitySlot(
+                        rs.getObject("id", UUID.class),
+                        rs.getObject(
+                                "counsellor_profile_id",
+                                UUID.class
+                        ),
+                        rs.getObject(
+                                "starts_at",
+                                OffsetDateTime.class
+                        ),
+                        rs.getObject(
+                                "ends_at",
+                                OffsetDateTime.class
+                        ),
+                        rs.getString("status"),
+                        rs.getObject(
+                                "created_at",
+                                OffsetDateTime.class
+                        )
+                ),
+                profileId
+        );
     }
 
     @Transactional
-    public CounsellorAvailability addAvailability(
-            Long profileId,
-            DayOfWeek dayOfWeek,
-            LocalTime startTime,
-            LocalTime endTime) {
+    public AvailabilitySlot addAvailability(
+            UUID profileId,
+            OffsetDateTime startsAt,
+            OffsetDateTime endsAt) {
 
-        getActiveCounsellor(profileId);
+        ensureCounsellorExists(profileId);
 
-        if (dayOfWeek == null) {
+        if (startsAt == null || endsAt == null) {
             throw new IllegalArgumentException(
-                    "Day of the week is required."
+                    "Start and end times are required."
             );
         }
 
-        if (startTime == null || endTime == null) {
+        if (!startsAt.isAfter(OffsetDateTime.now())) {
             throw new IllegalArgumentException(
-                    "Start time and end time are required."
+                    "Availability must start in the future."
             );
         }
 
-        if (!endTime.isAfter(startTime)) {
+        if (!endsAt.isAfter(startsAt)) {
             throw new IllegalArgumentException(
                     "End time must be later than start time."
             );
         }
 
-        List<CounsellorAvailability> existingPeriods =
-                availabilityRepository
-                        .findByCounsellorProfileIdOrderByDayOfWeekAscStartTimeAsc(
-                                profileId
-                        );
+        UUID availabilityId = UUID.randomUUID();
 
-        for (CounsellorAvailability existing : existingPeriods) {
-            if (existing.getDayOfWeek() == dayOfWeek
-                    && existing.isAvailable()
-                    && startTime.isBefore(existing.getEndTime())
-                    && endTime.isAfter(existing.getStartTime())) {
+        try {
+            jdbcTemplate.update(
+                    """
+                    INSERT INTO wellness.availability_slots
+                        (
+                            id,
+                            counsellor_profile_id,
+                            starts_at,
+                            ends_at,
+                            status
+                        )
+                    VALUES (?, ?, ?, ?, 'OPEN')
+                    """,
+                    availabilityId,
+                    profileId,
+                    startsAt,
+                    endsAt
+            );
 
-                throw new IllegalStateException(
-                        "This availability period overlaps an existing available period."
-                );
-            }
+        } catch (DataIntegrityViolationException exception) {
+            throw new IllegalStateException(
+                    "This availability period overlaps an existing slot.",
+                    exception
+            );
         }
 
-        CounsellorAvailability availability =
-                new CounsellorAvailability();
-
-        availability.setCounsellorProfileId(profileId);
-        availability.setDayOfWeek(dayOfWeek);
-        availability.setStartTime(startTime);
-        availability.setEndTime(endTime);
-        availability.setAvailable(true);
-
-        return availabilityRepository.save(availability);
+        return jdbcTemplate.queryForObject(
+                """
+                SELECT
+                    id,
+                    counsellor_profile_id,
+                    starts_at,
+                    ends_at,
+                    status,
+                    created_at
+                FROM wellness.availability_slots
+                WHERE id = ?
+                """,
+                (rs, rowNum) -> new AvailabilitySlot(
+                        rs.getObject("id", UUID.class),
+                        rs.getObject(
+                                "counsellor_profile_id",
+                                UUID.class
+                        ),
+                        rs.getObject(
+                                "starts_at",
+                                OffsetDateTime.class
+                        ),
+                        rs.getObject(
+                                "ends_at",
+                                OffsetDateTime.class
+                        ),
+                        rs.getString("status"),
+                        rs.getObject(
+                                "created_at",
+                                OffsetDateTime.class
+                        )
+                ),
+                availabilityId
+        );
     }
 
     @Transactional
-    public void deleteAvailability(Long profileId, Long availabilityId) {
+    public void deleteAvailability(
+            UUID profileId,
+            UUID availabilityId) {
 
-        getActiveCounsellor(profileId);
+        ensureCounsellorExists(profileId);
 
-        if (availabilityId == null || availabilityId <= 0) {
+        if (availabilityId == null) {
             throw new IllegalArgumentException(
                     "A valid availability ID is required."
             );
         }
 
-        CounsellorAvailability availability = availabilityRepository
-                .findByIdAndCounsellorProfileId(
-                        availabilityId,
-                        profileId
-                )
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Availability period not found for this counsellor."
-                ));
+        try {
+            int deleted = jdbcTemplate.update(
+                    """
+                    DELETE FROM wellness.availability_slots
+                    WHERE id = ?
+                      AND counsellor_profile_id = ?
+                    """,
+                    availabilityId,
+                    profileId
+            );
 
-        availabilityRepository.delete(availability);
+            if (deleted == 0) {
+                throw new IllegalArgumentException(
+                        "Availability slot not found for this counsellor."
+                );
+            }
+
+        } catch (DataIntegrityViolationException exception) {
+            throw new IllegalStateException(
+                    "This availability slot cannot be deleted because it is linked to an appointment.",
+                    exception
+            );
+        }
     }
-} 
+}

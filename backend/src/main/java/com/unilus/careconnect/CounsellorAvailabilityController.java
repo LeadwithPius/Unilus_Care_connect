@@ -1,116 +1,123 @@
-
 package com.unilus.careconnect;
 
-import com.unilus.careconnect.entity.CounsellorAvailability;
-import com.unilus.careconnect.entity.CounsellorProfile;
-import com.unilus.careconnect.entity.UserAccount;
-import com.unilus.careconnect.repository.CounsellorProfileRepository;
-import com.unilus.careconnect.repository.UserAccountRepository;
-import com.unilus.careconnect.repository.UserRoleRepository;
-import com.unilus.careconnect.service.CounsellorAvailabilityService;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.DayOfWeek;
-import java.time.LocalTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import com.unilus.careconnect.service.CounsellorAvailabilityService;
+import com.unilus.careconnect.service.CounsellorAvailabilityService.AvailabilitySlot;
 
 @RestController
 @RequestMapping("/api/counsellor/availability")
 public class CounsellorAvailabilityController {
 
     private final CounsellorAvailabilityService availabilityService;
-    private final UserAccountRepository userAccountRepository;
-    private final CounsellorProfileRepository counsellorProfileRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     public CounsellorAvailabilityController(
             CounsellorAvailabilityService availabilityService,
-            UserAccountRepository userAccountRepository,
-            CounsellorProfileRepository counsellorProfileRepository,
-            UserRoleRepository userRoleRepository) {
+            JdbcTemplate jdbcTemplate) {
 
         this.availabilityService = availabilityService;
-        this.userAccountRepository = userAccountRepository;
-        this.counsellorProfileRepository = counsellorProfileRepository;
-        this.userRoleRepository = userRoleRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    private CounsellorProfile getLoggedInCounsellor(
+    private UUID getLoggedInCounsellorProfileId(
             Authentication authentication) {
 
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null ||
+                !authentication.isAuthenticated()) {
             throw new IllegalStateException(
                     "You must be logged in to manage availability."
             );
         }
 
-        UserAccount user = userAccountRepository
-                .findByEmail(authentication.getName().trim().toLowerCase())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "User account not found."
-                ));
+        boolean counsellorRole = authentication
+                .getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                        "ROLE_COUNSELLOR".equals(
+                                authority.getAuthority()
+                        )
+                );
 
-        if (!"ACTIVE".equalsIgnoreCase(user.getAccountStatus())) {
+        if (!counsellorRole) {
             throw new IllegalStateException(
-                    "Your account must be active."
+                    "Only counsellors can manage availability."
             );
         }
 
-        if (!userRoleRepository.existsByUserIdAndRoleName(
-                user.getId(), "COUNSELLOR")) {
+        List<UUID> profiles = jdbcTemplate.query(
+                """
+                SELECT cp.id
+                FROM credentials.counsellor_profiles cp
+                JOIN credentials.users u
+                    ON u.id = cp.user_id
+                WHERE lower(u.email) = lower(?)
+                  AND u.enabled = TRUE
+                """,
+                (rs, rowNum) ->
+                        rs.getObject("id", UUID.class),
+                authentication.getName()
+        );
 
+        if (profiles.isEmpty()) {
             throw new IllegalStateException(
-                    "Only approved counsellors can manage availability."
+                    "Counsellor profile not found."
             );
         }
 
-        CounsellorProfile profile = counsellorProfileRepository
-                .findByUserId(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Counsellor profile not found."
-                ));
-
-        if (!"ACTIVE".equalsIgnoreCase(profile.getAccountStatus())) {
-            throw new IllegalStateException(
-                    "Your counsellor profile is not active."
-            );
-        }
-
-        return profile;
+        return profiles.getFirst();
     }
 
     @GetMapping
     public ResponseEntity<?> getAvailability(
-            @RequestParam(defaultValue = "true") boolean availableOnly,
+            @RequestParam(defaultValue = "true")
+            boolean openOnly,
             Authentication authentication) {
 
         try {
-            CounsellorProfile profile =
-                    getLoggedInCounsellor(authentication);
+            UUID profileId =
+                    getLoggedInCounsellorProfileId(authentication);
 
-            List<CounsellorAvailability> periods =
+            List<AvailabilitySlot> periods =
                     availabilityService.getAvailability(
-                            profile.getId(),
-                            availableOnly
+                            profileId,
+                            openOnly
                     );
 
             return ResponseEntity.ok(periods);
 
         } catch (IllegalArgumentException exception) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("error", exception.getMessage())
-            );
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error",
+                            exception.getMessage()
+                    ));
 
         } catch (IllegalStateException exception) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                    Map.of("error", exception.getMessage())
-            );
+
+            return ResponseEntity.status(
+                    HttpStatus.FORBIDDEN
+            ).body(Map.of(
+                    "error",
+                    exception.getMessage()
+            ));
         }
     }
 
@@ -126,93 +133,100 @@ public class CounsellorAvailabilityController {
                 );
             }
 
-            CounsellorProfile profile =
-                    getLoggedInCounsellor(authentication);
+            UUID profileId =
+                    getLoggedInCounsellorProfileId(authentication);
 
-            CounsellorAvailability availability =
+            AvailabilitySlot availability =
                     availabilityService.addAvailability(
-                            profile.getId(),
-                            request.getDayOfWeek(),
-                            request.getStartTime(),
-                            request.getEndTime()
+                            profileId,
+                            request.getStartsAt(),
+                            request.getEndsAt()
                     );
 
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(availability);
+            return ResponseEntity.status(
+                    HttpStatus.CREATED
+            ).body(availability);
 
         } catch (IllegalArgumentException exception) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("error", exception.getMessage())
-            );
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error",
+                            exception.getMessage()
+                    ));
 
         } catch (IllegalStateException exception) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                    Map.of("error", exception.getMessage())
-            );
+
+            return ResponseEntity.status(
+                    HttpStatus.CONFLICT
+            ).body(Map.of(
+                    "error",
+                    exception.getMessage()
+            ));
         }
     }
 
     @DeleteMapping("/{availabilityId}")
     public ResponseEntity<?> deleteAvailability(
-            @PathVariable Long availabilityId,
+            @PathVariable UUID availabilityId,
             Authentication authentication) {
 
         try {
-            CounsellorProfile profile =
-                    getLoggedInCounsellor(authentication);
+            UUID profileId =
+                    getLoggedInCounsellorProfileId(authentication);
 
             availabilityService.deleteAvailability(
-                    profile.getId(),
+                    profileId,
                     availabilityId
             );
 
             return ResponseEntity.ok(
-                    Map.of("message", "Availability deleted successfully.")
+                    Map.of(
+                            "message",
+                            "Availability deleted successfully."
+                    )
             );
 
         } catch (IllegalArgumentException exception) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("error", exception.getMessage())
-            );
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error",
+                            exception.getMessage()
+                    ));
 
         } catch (IllegalStateException exception) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                    Map.of("error", exception.getMessage())
-            );
+
+            return ResponseEntity.status(
+                    HttpStatus.CONFLICT
+            ).body(Map.of(
+                    "error",
+                    exception.getMessage()
+            ));
         }
     }
 
     public static class AvailabilityRequest {
 
-        private DayOfWeek dayOfWeek;
-        private LocalTime startTime;
-        private LocalTime endTime;
+        private OffsetDateTime startsAt;
+        private OffsetDateTime endsAt;
 
-        public AvailabilityRequest() {
+        public OffsetDateTime getStartsAt() {
+            return startsAt;
         }
 
-        public DayOfWeek getDayOfWeek() {
-            return dayOfWeek;
+        public void setStartsAt(
+                OffsetDateTime startsAt) {
+            this.startsAt = startsAt;
         }
 
-        public void setDayOfWeek(DayOfWeek dayOfWeek) {
-            this.dayOfWeek = dayOfWeek;
+        public OffsetDateTime getEndsAt() {
+            return endsAt;
         }
 
-        public LocalTime getStartTime() {
-            return startTime;
-        }
-
-        public void setStartTime(LocalTime startTime) {
-            this.startTime = startTime;
-        }
-
-        public LocalTime getEndTime() {
-            return endTime;
-        }
-
-        public void setEndTime(LocalTime endTime) {
-            this.endTime = endTime;
+        public void setEndsAt(
+                OffsetDateTime endsAt) {
+            this.endsAt = endsAt;
         }
     }
 }
