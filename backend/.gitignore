@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+# JetBrains IDE settings
+.idea/
+
+# Visual Studio Code settings
+.vscode/
+
+# Maven build output
+**/target/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example

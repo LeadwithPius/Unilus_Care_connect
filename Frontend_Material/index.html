@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>UNILUS CareConnect · Log in</title>
+    <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#134f47">
+    <link rel="stylesheet" href="Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="Frontend_Material/Shared/core.js"></script>
+<script src="Frontend_Material/Shared/care_data.js"></script>
+<script src="Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="Frontend_Material/Shared/install_app.js"></script>
+<script src="Frontend_Material/Shared/password_tools.js"></script>
+<script>
+    // index.html: log in / create account / forgot password for students, counsellors and the administrator.
+    function roleTabs(){return `<div style="display:flex;gap:6px;margin-bottom:12px">${[['s','Student'],['c','Counsellor'],['a','Admin']].map(x=>`<button class="pill" style="flex:1;padding:8px;background:${S.lr===x[0]?'var(--g)':'#8aa5a0'}" data-lr="${x[0]}">${x[1]}</button>`).join('')}</div>`}
+    function loginView(){
+        const sel=(id,o)=>`<select class="fld" id="${id}">${o.map(x=>`<option value="${[].concat(x)[0]}">${[].concat(x).pop()}</option>`).join('')}</select>`;
+        const inst=matchMedia('(display-mode: standalone)').matches?'':`<div class="hero"><b style="font-size:16px">Download the app today</b><div class="small" style="color:#cfe3df;margin:4px 0 8px">Add CareConnect to your home screen in one tap. No app store, and no sign-up needed to install.</div><button class="btn" style="background:#fff;color:var(--g);margin:0" id="inst">Download app</button></div>`;
+        const stu=S.lr==='s',idl=stu?'Student ID':'UNILUS email';
+        const link=(m,t)=>`<button data-lm="${m}" style="background:none;color:var(--t);font-size:13px;padding:8px 12px 8px 0;text-decoration:underline">${t}</button>`;
+        let b;
+        if(S.lm==='forgot')b=`<h2>Reset your password</h2><div class="small" style="margin-bottom:10px">Enter your ${idl.toLowerCase()}, one of your recovery codes and a new password. Each code works once.</div><div class="card">${lab(idl)}${inp('lid')}${lab('Recovery code')}${inp('lcode','XXXXX-XXXXX')}${lab('New password')}${inp('lnp','','password','new-password')}<button class="btn" id="lgo">Reset password</button></div>${link('in','Back to log in')}<div class="small">${stu?'Lost your codes too? Contact the counselling office for help.':'Lost your codes too? Ask the administrator to reset your password.'}</div>`;
+        else if(S.lm==='new'&&stu)b=`<h2>Create your account</h2><div class="small" style="margin-bottom:10px">We turn your ID into an anonymous code and never store it. You’ll get recovery codes in case you forget your password.</div><div class="card">${lab('Student ID')}${inp('lid')}${lab('Password')}${inp('lpw','','password','new-password')}<div class="small" style="margin:-4px 0 8px">8 or more characters, with a letter and a number.</div>${lab('Faculty')}${sel('lf',['Technology & Sciences','Business','Education','Health Sciences','Law','Humanities'])}${lab('Year of study')}${sel('ly',[1,2,3,4,5,6,7])}${lab('Campus')}${sel('lc',[['Leopards Hill','Leopards Hill (Lusaka)'],['Pioneer','Pioneer (Mass Media, Lusaka)'],['Silverest','Silverest (Chongwe)']])}<button class="btn" id="lgo">Create account</button></div>${link('in','I already have an account')}`;
+        else b=`<h2>${stu?'Welcome to CareConnect':S.lr==='c'?'Counsellor log in':'Administrator log in'}</h2><div class="small" style="margin-bottom:10px">${stu?'Log in with your student ID and password.':'Use your UNILUS email and password. Accounts are created by the administrator.'}</div><div class="card">${lab(idl)}${inp('lid')}${lab('Password')}${inp('lpw','','password','current-password')}<button class="btn" id="lgo">Log in</button></div>${link('forgot','Forgot password?')}${stu?link('new','Create account'):''}${stu?'':'<div class="small" style="margin-top:8px">Demo: m.lungu@unilus.edu.zm / Temp1234 or admin@unilus.edu.zm / Admin1234. You’ll be asked to set your own password.</div>'}`;
+        return inst+roleTabs()+b}
+    function bindLogin(){
+        document.querySelectorAll('[data-lr]').forEach(b=>b.onclick=()=>{S.lr=b.dataset.lr;S.lm='in';render()});
+        document.querySelectorAll('[data-lm]').forEach(b=>b.onclick=()=>{S.lm=b.dataset.lm;render()});
+        const g=$('lgo');if(g)g.onclick=doLogin;const i=$('inst');if(i)i.onclick=installApp}
+    const BADL='Incorrect ID or password, or the account is temporarily locked.';
+    function strike(a){a.fails=(a.fails||0)+1;if(a.fails>=5){a.lock=Date.now()+900000;a.fails=0}save()}
+    function doLogin(){
+        const id=($('lid').value||'').trim().toLowerCase();
+        if(S.lm==='forgot')return doReset(id);
+        const pw=$('lpw').value;
+        if(S.lm==='new'){
+            if(id.length<3)return toast('Enter your student ID.');
+            if(!pwOk(pw))return toast(PWMSG);
+            if(S.acc[id])return toast('We couldn’t create that account. If you already have one, log in or reset your password.');
+            const codes=mkCodes();S.acc[id]={pw,role:'s',codes,fails:0,must:0};S.fac=$('lf').value;S.yr=$('ly').value;S.camp=$('lc').value;S.me=id;S.role='s';S.in=true;save();return showCodes(codes,enter)}
+        const a=S.acc[id];
+        if(!a||a.role!==S.lr||(a.lock&&a.lock>Date.now()))return toast(BADL);
+        if(a.pw!==pw){strike(a);return toast(BADL)}
+        a.fails=0;
+        if(S.lr==='c'){const c=S.cs.find(x=>x.e===id);if(c&&!c.on)return toast('This account has been deactivated.');S.name=c?c.n:id}
+        if(S.lr==='a')S.name='Administrator';
+        S.me=id;S.role=S.lr;
+        if(a.must)return forceChange();
+        S.in=true;S.cview='dash';save();enter()}
+    function doReset(id){
+        const code=($('lcode').value||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase(),np=$('lnp').value,a=S.acc[id];
+        const bad=()=>toast('That ID and recovery code don’t match.');
+        if(!pwOk(np))return toast(PWMSG);
+        if(!a||a.role!==S.lr)return bad();
+        const i=a.codes.findIndex(c=>c.replace('-','')===code);
+        if(i<0){strike(a);return bad()}
+        a.codes.splice(i,1);a.pw=np;a.must=0;a.fails=0;a.lock=0;S.lm='in';render();
+        toast('Password changed. '+a.codes.length+' recovery codes left. Log in with your new password.')}
+    function enter(){location.href=ROUTES[S.role]}
+    if(S.in)enter();
+    else{
+        CC.mount({public:true,title:'Welcome',root:'',act(){},
+            view:()=>loginView()+'<div class="small" style="margin-top:16px"><a href="#" id="rst" style="color:var(--t)">Reset demo data</a></div>',
+            after(){bindLogin();$('rst').onclick=e=>{e.preventDefault();resetDemo()}}});
+        if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
+</script></body></html>

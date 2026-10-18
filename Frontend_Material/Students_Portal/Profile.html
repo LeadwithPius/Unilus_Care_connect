@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>UNILUS CareConnect · Student profile</title>
+    <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+    <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script src="../../Frontend_Material/Shared/wellbeing_checkin.js"></script>
+<script src="../../Frontend_Material/Shared/learning_game.js"></script>
+<script src="../../Frontend_Material/Shared/masked_call.js"></script>
+<script>
+    // Me: profile, upcoming session (check-in/out, call, reschedule), learning progress, wellbeing check-in.
+    function view(){
+        const hi=S.hist.length?S.hist.map(h=>`<div class="row"><span>Check-in ${h.i}</span><b>${h.s}/15</b></div>`).join(''):'<div class="small">No check-ins yet.</div>';
+        return `<div class="hero" style="display:flex;gap:12px;align-items:center"><div style="font-size:30px">🎓</div><div><b>Anonymous student</b><div class="small" style="color:#cfe3df">${S.fac||'UNILUS'}${S.yr?' · Year '+S.yr:''}${S.camp?' · '+S.camp:''}</div></div></div>`+
+            (S.booked?`<div class="card" style="border-color:var(--t)"><div class="small">Upcoming session</div><h3 style="font-size:16px">Counselling session confirmed</h3><div class="small">${S.slot} · ${S.mode} · ${S.cns}</div><button class="btn" data-a="details">View session details</button>${S.mode==='Face-to-Face'?(!S.cin?'<button class="btn o" data-a="cin">Check in</button>':!S.cout?`<div class="small" style="margin-top:6px">Checked in at ${S.cin}</div><button class="btn o" data-a="cout">Check out</button>`:`<div class="small" style="margin-top:6px">Checked in ${S.cin}, out ${S.cout}</div>`):'<button class="btn o" data-a="call">Call counsellor (masked)</button>'}<button class="btn o" data-a="resched">Reschedule</button></div>`
+                :`<div class="card" style="background:#fbeeea;border-color:#e8c4b9"><h3 style="color:var(--r)">Need someone to talk to?</h3><button class="btn r" data-a="support">Book appointment now</button></div>`)+
+            `<div class="card"><h3>Learning progress</h3><div class="small">${gd()}/20 game sections complete</div></div><div class="card"><h3>Wellbeing self-assessment</h3><div class="small">Non-diagnostic. Tracks how you’re coping over time.</div>${hi}<button class="btn o" data-a="checkin">Take wellbeing check-in</button><button class="btn o" data-a="chpw" style="margin-top:14px">Change password</button><button class="btn o" data-a="logout">Log out</button></div>`}
+    const now=()=>new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    function act(a){
+        if(a==='cin'){S.cin=now();toast('Checked in. Timestamp saved.');render()}
+        else if(a==='cout'){S.cout=now();toast('Checked out. Session complete.');render()}
+        else if(a==='call')callUI();
+        else if(a==='resched'){S.re=true;S.step=4;S.slot='';go('support')}
+        else if(a==='details')modal(`<h3>Session details</h3><p class="small">${S.slot} · ${S.mode}<br>Counsellor: ${S.cns}<br>Location: On-campus clinic<br>Please check in within 15 minutes of start time.</p><button class="btn" onclick="close_()">Close</button>`);
+        else if(a==='support')go('support');
+        else if(a==='checkin')checkin();
+    }
+    CC.mount({role:'s',title:'Student profile',nav:'me',root:'../../',view,act});
+</script></body></html>
