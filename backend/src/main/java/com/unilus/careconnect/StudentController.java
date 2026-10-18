@@ -13,6 +13,8 @@ import com.unilus.careconnect.dto.StudentRegistrationRequest;
 import com.unilus.careconnect.entity.Student;
 import com.unilus.careconnect.service.StudentService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/students")
 public class StudentController {
@@ -25,30 +27,28 @@ public class StudentController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerStudent(
-            @RequestBody StudentRegistrationRequest request) {
+            @Valid @RequestBody StudentRegistrationRequest request) {
 
         try {
             Student student = studentService.registerStudent(
-                    request.getFullName(),
-                    request.getEmail(),
-                    request.getStudentNumber(),
-                    request.getPassword()
+                request.getFullName(),
+                request.getEmail(),
+                request.getStudentNumber(),
+                request.getPassword()
             );
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    Map.of(
-                            "message", "Student registered successfully!",
-                            "studentId", student.getId(),
-                            "fullName", request.getFullName(),
-                            "email", request.getEmail(),
-                            "studentNumber", request.getStudentNumber(),
-                            "createdAt", student.getCreatedAt()
-                    )
-            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                "message", "Registration received. Please verify your university email.",
+                "studentId", student.getId(),
+                "fullName", request.getFullName(),
+                "email", request.getEmail(),
+                "studentNumber", request.getStudentNumber(),
+                "createdAt", student.getCreatedAt()
+            ));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(
-                    Map.of("error", e.getMessage())
+                Map.of("error", e.getMessage())
             );
         }
     }

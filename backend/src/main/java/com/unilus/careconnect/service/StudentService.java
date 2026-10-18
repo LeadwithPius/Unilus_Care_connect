@@ -16,13 +16,17 @@ public class StudentService {
 
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
     public StudentService(
-            JdbcTemplate jdbcTemplate,
-            PasswordEncoder passwordEncoder) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.passwordEncoder = passwordEncoder;
-    }
+        JdbcTemplate jdbcTemplate,
+        PasswordEncoder passwordEncoder,
+        EmailVerificationService emailVerificationService) {
+
+    this.jdbcTemplate = jdbcTemplate;
+    this.passwordEncoder = passwordEncoder;
+    this.emailVerificationService = emailVerificationService;
+}
 
     @Transactional
     public Student registerStudent(
@@ -82,21 +86,23 @@ public class StudentService {
             // 1. Create authentication account
             // -----------------------------------------------------
 
-            jdbcTemplate.update("""
-                    INSERT INTO credentials.users (
-                        id,
-                        email,
-                        password_hash,
-                        enabled,
-                        email_verified,
-                        created_at
-                    )
-                    VALUES (?, ?, ?, true, false, ?)
-                    """,
-                    userId,
-                    normalizedEmail,
-                    passwordHash,
-                    createdAt);
+           jdbcTemplate.update("""
+        INSERT INTO credentials.users (
+            id,
+            email,
+            password_hash,
+            enabled,
+            email_verified,
+            created_at
+        )
+        VALUES (?, ?, ?, false, false, ?)
+        """,
+        userId,
+        normalizedEmail,
+        passwordHash,
+        createdAt);
+
+        emailVerificationService.sendVerificationEmail(userId,normalizedEmail);
 
             // -----------------------------------------------------
             // 2. Create wellness student profile
@@ -201,15 +207,21 @@ public class StudentService {
                     "Full name cannot exceed 150 characters.");
         }
 
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Email is required.");
-        }
+      if (email == null || email.isBlank()) {
+    throw new IllegalArgumentException(
+            "Email is required.");
+}
 
-        if (!email.contains("@")) {
-            throw new IllegalArgumentException(
-                    "A valid email address is required.");
-        }
+String normalizedEmail = email.trim().toLowerCase(
+        java.util.Locale.ROOT);
+
+if (normalizedEmail.length() > 254
+        || !normalizedEmail.matches(
+                "^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@unilus\\.ac\\.zm$")) {
+
+    throw new IllegalArgumentException(
+            "Please use a valid @unilus.ac.zm university email address.");
+}
 
         if (studentNumber == null || studentNumber.isBlank()) {
             throw new IllegalArgumentException(
