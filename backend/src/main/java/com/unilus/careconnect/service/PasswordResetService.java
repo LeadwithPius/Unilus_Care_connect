@@ -111,6 +111,7 @@ public class PasswordResetService {
      */
     @Transactional
     public boolean resetPassword(String rawToken, String newPassword) {
+        PasswordPolicy.validate(newPassword);
         if (rawToken == null || rawToken.isBlank()) {
             return false;
         }
