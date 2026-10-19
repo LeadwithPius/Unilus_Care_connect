@@ -1,6 +1,7 @@
 package com.unilus.careconnect.service;
 
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,14 +20,13 @@ public class StudentService {
     private final EmailVerificationService emailVerificationService;
 
     public StudentService(
-        JdbcTemplate jdbcTemplate,
-        PasswordEncoder passwordEncoder,
-        EmailVerificationService emailVerificationService) {
-
-    this.jdbcTemplate = jdbcTemplate;
-    this.passwordEncoder = passwordEncoder;
-    this.emailVerificationService = emailVerificationService;
-}
+            JdbcTemplate jdbcTemplate,
+            PasswordEncoder passwordEncoder,
+            EmailVerificationService emailVerificationService) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.passwordEncoder = passwordEncoder;
+        this.emailVerificationService = emailVerificationService;
+    }
 
     @Transactional
     public Student registerStudent(
@@ -37,37 +37,24 @@ public class StudentService {
 
         validateInput(fullName, email, studentNumber, password);
 
-        String normalizedEmail = email.trim().toLowerCase();
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         String normalizedStudentNumber = studentNumber.trim();
-
-        // ---------------------------------------------------------
-        // Prevent duplicate email
-        // ---------------------------------------------------------
 
         Integer emailCount = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM credentials.users
                 WHERE lower(email) = lower(?)
-                """,
-                Integer.class,
-                normalizedEmail);
+                """, Integer.class, normalizedEmail);
 
         if (emailCount != null && emailCount > 0) {
-            throw new IllegalArgumentException(
-                    "This email is already registered.");
+            throw new IllegalArgumentException("This email is already registered.");
         }
-
-        // ---------------------------------------------------------
-        // Prevent duplicate student number
-        // ---------------------------------------------------------
 
         Integer studentNumberCount = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM credentials.student_registration_details
                 WHERE lower(student_number) = lower(?)
-                """,
-                Integer.class,
-                normalizedStudentNumber);
+                """, Integer.class, normalizedStudentNumber);
 
         if (studentNumberCount != null && studentNumberCount > 0) {
             throw new IllegalArgumentException(
@@ -77,117 +64,61 @@ public class StudentService {
         UUID userId = UUID.randomUUID();
         UUID studentProfileId = UUID.randomUUID();
         OffsetDateTime createdAt = OffsetDateTime.now();
-
         String passwordHash = passwordEncoder.encode(password);
 
         try {
-
-            // -----------------------------------------------------
-            // 1. Create authentication account
-            // -----------------------------------------------------
-
-           jdbcTemplate.update("""
-        INSERT INTO credentials.users (
-            id,
-            email,
-            password_hash,
-            enabled,
-            email_verified,
-            created_at
-        )
-        VALUES (?, ?, ?, false, false, ?)
-        """,
-        userId,
-        normalizedEmail,
-        passwordHash,
-        createdAt);
-
-        emailVerificationService.sendVerificationEmail(userId,normalizedEmail);
-
-            // -----------------------------------------------------
-            // 2. Create wellness student profile
-            // -----------------------------------------------------
+            jdbcTemplate.update("""
+                    INSERT INTO credentials.users (
+                        id, email, password_hash, enabled, email_verified, created_at
+                    )
+                    VALUES (?, ?, ?, false, false, ?)
+                    """, userId, normalizedEmail, passwordHash, createdAt);
 
             jdbcTemplate.update("""
-                    INSERT INTO wellness.student_profiles (
-                        id,
-                        created_at
-                    )
+                    INSERT INTO wellness.student_profiles (id, created_at)
                     VALUES (?, ?)
-                    """,
-                    studentProfileId,
-                    createdAt);
-
-            // -----------------------------------------------------
-            // 3. Link account to student profile
-            // -----------------------------------------------------
+                    """, studentProfileId, createdAt);
 
             jdbcTemplate.update("""
                     INSERT INTO credentials.student_identity_links (
-                        user_id,
-                        student_profile_id,
-                        created_at
+                        user_id, student_profile_id, created_at
                     )
                     VALUES (?, ?, ?)
-                    """,
-                    userId,
-                    studentProfileId,
-                    createdAt);
-
-            // -----------------------------------------------------
-            // 4. Store registration information
-            // -----------------------------------------------------
+                    """, userId, studentProfileId, createdAt);
 
             jdbcTemplate.update("""
                     INSERT INTO credentials.student_registration_details (
-                        user_id,
-                        full_name,
-                        student_number,
-                        created_at
+                        user_id, full_name, student_number, created_at
                     )
                     VALUES (?, ?, ?, ?)
-                    """,
-                    userId,
-                    fullName.trim(),
-                    normalizedStudentNumber,
-                    createdAt);
-
-            // -----------------------------------------------------
-            // 5. Assign STUDENT role
-            // -----------------------------------------------------
+                    """, userId, fullName.trim(), normalizedStudentNumber, createdAt);
 
             Short studentRoleId = jdbcTemplate.queryForObject("""
                     SELECT id
                     FROM credentials.roles
                     WHERE name = 'STUDENT'
-                    """,
-                    Short.class);
+                    """, Short.class);
 
             if (studentRoleId == null) {
-                throw new IllegalStateException(
-                        "STUDENT role is not configured.");
+                throw new IllegalStateException("STUDENT role is not configured.");
             }
 
             jdbcTemplate.update("""
-                    INSERT INTO credentials.user_roles (
-                        user_id,
-                        role_id
-                    )
+                    INSERT INTO credentials.user_roles (user_id, role_id)
                     VALUES (?, ?)
-                    """,
-                    userId,
-                    studentRoleId);
+                    """, userId, studentRoleId);
 
-        } catch (DataIntegrityViolationException e) {
+            // Send only after the account and its related records have been created.
+            emailVerificationService.sendVerificationEmail(userId, normalizedEmail);
+
+        } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException(
                     "The student account could not be created.");
         }
 
         Student student = new Student();
-
         student.setId(studentProfileId);
         student.setCreatedAt(createdAt);
-
         return student;
     }
 
@@ -198,44 +129,30 @@ public class StudentService {
             String password) {
 
         if (fullName == null || fullName.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Full name is required.");
+            throw new IllegalArgumentException("Full name is required.");
         }
-
         if (fullName.trim().length() > 150) {
-            throw new IllegalArgumentException(
-                    "Full name cannot exceed 150 characters.");
+            throw new IllegalArgumentException("Full name cannot exceed 150 characters.");
+        }
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email is required.");
         }
 
-      if (email == null || email.isBlank()) {
-    throw new IllegalArgumentException(
-            "Email is required.");
-}
-
-String normalizedEmail = email.trim().toLowerCase(
-        java.util.Locale.ROOT);
-
-if (normalizedEmail.length() > 254
-        || !normalizedEmail.matches(
-                "^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@unilus\\.ac\\.zm$")) {
-
-    throw new IllegalArgumentException(
-            "Please use a valid @unilus.ac.zm university email address.");
-}
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        if (normalizedEmail.length() > 254
+                || !normalizedEmail.matches(
+                        "^[a-z0-9.!#$%&'*+/=?^`{|}~-]+@unilus\\.ac\\.zm$")) {
+            throw new IllegalArgumentException(
+                    "Please use a valid @unilus.ac.zm university email address.");
+        }
 
         if (studentNumber == null || studentNumber.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Student number is required.");
+            throw new IllegalArgumentException("Student number is required.");
         }
-
         if (studentNumber.trim().length() > 50) {
-            throw new IllegalArgumentException(
-                    "Student number cannot exceed 50 characters.");
+            throw new IllegalArgumentException("Student number cannot exceed 50 characters.");
         }
 
-        if (password == null || password.length() < 8) {
-            throw new IllegalArgumentException(
-                    "Password must contain at least 8 characters.");
-        }
+        PasswordPolicy.validate(password);
     }
 }
