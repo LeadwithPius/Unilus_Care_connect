@@ -48,7 +48,6 @@ public class EducationService {
             args.add(term);
             args.add(term);
             args.add(term);
-            sql.append(" ESCAPE '\\'");
         }
         sql.append(" ORDER BY display_order ASC, lower(title) ASC");
 
@@ -244,7 +243,4 @@ public class EducationService {
         return resourceUrl == null || resourceUrl.isBlank() ? null : resourceUrl.trim();
     }
 
-    private String escapeLike(String value) {
-        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-    }
 }
