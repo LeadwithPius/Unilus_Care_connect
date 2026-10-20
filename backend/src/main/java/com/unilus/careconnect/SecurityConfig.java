@@ -32,6 +32,7 @@ public class SecurityConfig {
                     "/api/auth/verify-email"
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/education/**", "/api/game/**").hasRole("STUDENT")
                 .requestMatchers("/api/appointments/**").hasRole("STUDENT")
                 .requestMatchers("/api/auth/**").authenticated()
                 .anyRequest().authenticated()
