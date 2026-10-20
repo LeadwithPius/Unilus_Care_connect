@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,7 +31,7 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<?> bookAppointment(
             Authentication authentication,
-            @RequestBody BookAppointmentRequest request) {
+            @Valid @RequestBody BookAppointmentRequest request) {
 
         try {
             Appointment appointment = appointmentService.bookAppointment(
