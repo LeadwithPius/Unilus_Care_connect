@@ -38,8 +38,6 @@ public class EducationResourceRequest {
     @Min(0)
     private int displayOrder;
 
-    private boolean published;
-
     public String getSlug() { return slug; }
     public void setSlug(String slug) { this.slug = slug; }
 
@@ -64,6 +62,4 @@ public class EducationResourceRequest {
     public int getDisplayOrder() { return displayOrder; }
     public void setDisplayOrder(int displayOrder) { this.displayOrder = displayOrder; }
 
-    public boolean isPublished() { return published; }
-    public void setPublished(boolean published) { this.published = published; }
 }

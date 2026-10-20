@@ -92,7 +92,7 @@ public class EducationService {
                     request.getContent().trim(),
                     request.getContentType().trim().toUpperCase(Locale.ROOT),
                     normalizeUrl(request.getResourceUrl()),
-                    request.isPublished(),
+                    false,
                     request.getDisplayOrder());
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException(
@@ -107,11 +107,17 @@ public class EducationService {
         int updated;
         try {
             updated = jdbcTemplate.update("""
-                    UPDATE wellness.education_resources
-                    SET slug = ?, title = ?, topic = ?, summary = ?, content = ?,
-                        content_type = ?, resource_url = ?, published = ?,
-                        display_order = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
+                   UPDATE wellness.education_resources
+SET slug = ?,
+    title = ?,
+    topic = ?,
+    summary = ?,
+    content = ?,
+    content_type = ?,
+    resource_url = ?,
+    display_order = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
                     """,
                     request.getSlug().trim(),
                     request.getTitle().trim(),
@@ -120,7 +126,7 @@ public class EducationService {
                     request.getContent().trim(),
                     request.getContentType().trim().toUpperCase(Locale.ROOT),
                     normalizeUrl(request.getResourceUrl()),
-                    request.isPublished(),
+                    
                     request.getDisplayOrder(),
                     id);
         } catch (DataIntegrityViolationException exception) {
