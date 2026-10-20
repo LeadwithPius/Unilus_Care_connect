@@ -44,7 +44,7 @@ public class EducationService {
         }
         if (search != null && !search.isBlank()) {
             sql.append(" AND (lower(title) LIKE ? OR lower(summary) LIKE ? OR lower(content) LIKE ?)");
-            String term = "%" + escapeLike(search.trim().toLowerCase(Locale.ROOT)) + "%";
+            String term = "%" + search.trim().toLowerCase(Locale.ROOT) + "%";
             args.add(term);
             args.add(term);
             args.add(term);
