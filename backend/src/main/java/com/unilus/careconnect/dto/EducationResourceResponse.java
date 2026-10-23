@@ -13,6 +13,7 @@ public record EducationResourceResponse(
         String contentType,
         String resourceUrl,
         boolean published,
+        String status,
         int displayOrder,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
