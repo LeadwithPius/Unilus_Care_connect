@@ -1,11 +1,14 @@
 package com.unilus.careconnect;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.unilus.careconnect.dto.ForgotPasswordRequest;
+import com.unilus.careconnect.dto.LoginRequest;
 import com.unilus.careconnect.dto.ResetPasswordRequest;
 import com.unilus.careconnect.dto.VerifyEmailRequest;
+import com.unilus.careconnect.service.AuthService;
 import com.unilus.careconnect.service.EmailVerificationService;
 import com.unilus.careconnect.service.PasswordResetService;
 
@@ -28,28 +33,59 @@ public class AuthController {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(AuthController.class);
 
+    private final AuthService authService;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
 
-  public AuthController(
-        PasswordResetService passwordResetService,
-        EmailVerificationService emailVerificationService) {
+    public AuthController(
+            AuthService authService,
+            PasswordResetService passwordResetService,
+            EmailVerificationService emailVerificationService) {
 
-    this.passwordResetService = passwordResetService;
-    this.emailVerificationService = emailVerificationService;
-}
+        this.authService = authService;
+        this.passwordResetService = passwordResetService;
+        this.emailVerificationService = emailVerificationService;
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(
+            @Valid @RequestBody LoginRequest request) {
+
+        try {
+            Map<String, Object> response = authService.login(
+                    request.userId(),
+                    request.password(),
+                    request.role()
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (AuthenticationException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "error",
+                            "Invalid user ID, password, or role. Check that your account is active and your email is verified."
+                    ));
+        }
+    }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(
+    public ResponseEntity<Map<String, Object>> getCurrentUser(
             Authentication authentication) {
+
+        List<String> roles = authentication.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(authority -> authority.startsWith("ROLE_"))
+                .map(role -> role.substring("ROLE_".length()))
+                .distinct()
+                .sorted()
+                .toList();
 
         return ResponseEntity.ok(
                 Map.of(
                         "email", authentication.getName(),
-                        "roles", authentication.getAuthorities().stream()
-                                .map(GrantedAuthority::getAuthority)
-                                .map(role -> role.replaceFirst("^ROLE_", ""))
-                                .toList()
+                        "roles", roles
                 )
         );
     }
@@ -76,7 +112,8 @@ public class AuthController {
 
         boolean reset = passwordResetService.resetPassword(
                 request.token(),
-                request.newPassword());
+                request.newPassword()
+        );
 
         if (!reset) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -92,22 +129,23 @@ public class AuthController {
     }
 
     @PostMapping("/verify-email")
-public ResponseEntity<Map<String, String>> verifyEmail(
-        @Valid @RequestBody VerifyEmailRequest request) {
+    public ResponseEntity<Map<String, String>> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request) {
 
-    boolean verified = emailVerificationService.verifyEmail(
-            request.token());
+        boolean verified = emailVerificationService.verifyEmail(
+                request.token()
+        );
 
-    if (!verified) {
-        return ResponseEntity.badRequest().body(Map.of(
+        if (!verified) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message",
+                    "The verification link is invalid, expired, or already used."
+            ));
+        }
+
+        return ResponseEntity.ok(Map.of(
                 "message",
-                "The verification link is invalid, expired, or already used."
+                "Your email has been verified. You can now log in."
         ));
     }
-
-    return ResponseEntity.ok(Map.of(
-            "message",
-            "Your email has been verified. You can now log in."
-    ));
-}
 }
