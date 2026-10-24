@@ -58,7 +58,7 @@
         if(i<0){strike(a);return bad()}
         a.codes.splice(i,1);a.pw=np;a.must=0;a.fails=0;a.lock=0;S.lm='in';render();
         toast('Password changed. '+a.codes.length+' recovery codes left. Log in with your new password.')}
-    function enter(){location.href=ROUTES[S.role]}
+    function enter(){location.replace(ROUTES[S.role])}
     if(S.in)enter();
     else{
         CC.mount({public:true,title:'Welcome',root:'',act(){},

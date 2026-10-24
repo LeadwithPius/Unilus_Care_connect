@@ -55,3 +55,4 @@ textarea{width:100%;border:1.5px solid var(--ln);border-radius:10px;padding:10px
 .hid{display:none}
 canvas{background:#0e2b26;border-radius:10px;width:100%;image-rendering:pixelated}
 @media(prefers-reduced-motion:reduce){.breathe{transition:none}}
+.backbtn{background:none;color:var(--g);font-size:14px;font-weight:600;padding:0 0 10px;text-align:left}

@@ -23,7 +23,7 @@ window.close_=close;
 const CC={
   cleanups:[],   // tool files register timers to stop when a popup is dismissed
   closeAll(){CC.cleanups.forEach(f=>f());close()},
-  logout(){S.in=false;S.cview='dash';save();location.href=PAGE.root+'index.html'},
+  logout(){S.in=false;S.cview='dash';save();location.replace(PAGE.root+'index.html')},
   mount(P){
     window.PAGE=P;
     if(!P.public&&(!S.in||S.role!==P.role)){location.replace(P.root+'index.html');return}
@@ -45,11 +45,27 @@ const CC={
     if(S.flash){toast(S.flash);S.flash='';save()}
   }
 };
-
+/*Code allows a back button to work
+ */
+const HOME={s:'Education_Hub.html',c:'Counsellors_FronPage.html',a:'Admin_Dashboard.html'};
+function goBack(){
+  save();
+  const ref=document.referrer||'';
+  if(ref.indexOf('Frontend_Material')>-1&&history.length>1)history.back();
+  else location.href=HOME[S.role]||PAGE.root+'index.html';
+}
+function pageTop(){
+  const here=(location.pathname||'').split('/').pop();
+  return(!PAGE.public&&here!==HOME[S.role])?'<button class="backbtn" onclick="goBack()">← Back</button>':'';
+}
+function pageBottom(html){
+  return(S.role==='s'&&!PAGE.public&&html.indexOf('data-a="logout"')<0)?'<button class="btn o" data-a="logout" style="margin-top:6px">Log out</button>':'';
+}
 /* every page defines view() (returns the screen's HTML), act(name) and optionally after() */
 function render(){
   if(typeof stopSnake==='function')stopSnake();
-  $('body').innerHTML=PAGE.view();
+  const v=PAGE.view();
+  $('body').innerHTML=pageTop()+v+pageBottom(v);
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==='logout')CC.logout();else if(a==='chpw')changePw();else PAGE.act(a)});
   if(PAGE.after)PAGE.after();
   save();
