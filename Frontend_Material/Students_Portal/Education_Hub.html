@@ -1,26 +1,523 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en">
+<head>
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>UNILUS CareConnect · Education hub</title>
-  <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+  <link rel="manifest" href="../../manifest.json">
+  <meta name="theme-color" content="#134f47">
   <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
-</head><body>
-<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
-<div class="phone" id="phone"></div>
-<script src="../../Frontend_Material/Shared/core.js"></script>
-<script src="../../Frontend_Material/Shared/care_data.js"></script>
-<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
-<script src="../../Frontend_Material/Shared/password_tools.js"></script>
-<script src="../../Frontend_Material/Shared/wellness_tools.js"></script>
-<script src="../../Frontend_Material/Shared/learning_game.js"></script>
-<script>
-  // Education Hub: the first screen a student sees after logging in.
-  function view(){return `<h2>Education hub</h2><div class="small" style="margin-bottom:10px">Learn at your own pace. Nothing here is recorded against your name.</div>`+Object.keys(TOPICS).map(k=>`<button class="opt" data-topic="${k}">${k}<small>Tap to read</small></button>`).join('')+
-          `<h3 style="margin-top:14px">Wellness toolkit</h3>
- <button class="opt" data-a="breathe">🫁 Breathe<small>Guided breathing for focus and calm</small></button>
- <button class="opt" data-a="finch">🐣 Finch<small>Look after your pet by looking after yourself</small></button>
- <button class="opt" data-a="snake">🐍 Snake Xenzia<small>Retro grounding game to interrupt panic loops</small></button><h3 style="margin-top:14px">Learning</h3><button class="opt" data-a="game">🎯 20-section game<small>${gd()}/20 sections complete</small></button><button class="opt" data-a="videos">▶️ Video tutorials<small>Short visual lessons</small></button>`}
-  function act(a){({breathe,finch,snake,game,videos})[a]()}
-  function after(){document.querySelectorAll('[data-topic]').forEach(b=>b.onclick=()=>modal(`<h3>${b.dataset.topic}</h3><p class="small">${TOPICS[b.dataset.topic]}</p><button class="btn" onclick="close_()">Close</button>`))}
-  CC.mount({role:'s',title:'Education hub',nav:'learn',root:'../../',view,act,after});
-</script></body></html>
+
+  <style>
+    .education-intro {
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .education-section {
+      margin-top: 20px;
+    }
+
+    .video-card {
+      margin: 12px 0;
+      padding: 15px;
+      border: 1px solid #dce8e4;
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .video-card h4 {
+      margin: 0 0 8px;
+    }
+
+    .video-card p {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    .video-topic {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 4px 9px;
+      border-radius: 20px;
+      background: #e8f4ef;
+      color: #134f47;
+      font-size: 12px;
+    }
+
+    .video-player {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      margin: 12px 0;
+      border: 0;
+      border-radius: 12px;
+      background: #111;
+    }
+
+    .video-empty {
+      padding: 18px;
+      margin-top: 12px;
+      border: 1px dashed #b8cdc6;
+      border-radius: 12px;
+      line-height: 1.5;
+    }
+
+    .video-loading {
+      padding: 16px 0;
+      text-align: center;
+    }
+
+    .video-action {
+      width: 100%;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <noscript>
+    <p style="padding:20px;font-family:sans-serif">
+      CareConnect needs JavaScript. Open this page in Safari or Chrome.
+    </p>
+  </noscript>
+
+  <div class="phone" id="phone"></div>
+
+  <script src="../../Frontend_Material/Shared/core.js"></script>
+  <script src="../../Frontend_Material/Shared/care_data.js"></script>
+  <script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+  <script src="../../Frontend_Material/Shared/password_tools.js"></script>
+  <script src="../../Frontend_Material/Shared/wellness_tools.js"></script>
+  <script src="../../Frontend_Material/Shared/learning_game.js"></script>
+
+  <script>
+    // Education Hub: the first screen a student sees after logging in.
+
+    let educationVideos = [];
+    let videoRequestInProgress = false;
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, function (character) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[character];
+      });
+    }
+
+    function view() {
+      return `
+        <h2>Education hub</h2>
+
+        <div class="small education-intro">
+          Learn at your own pace. Explore educational articles and short
+          videos whenever you need them.
+        </div>
+
+        <h3>Learning topics</h3>
+
+        ${Object.keys(TOPICS).map(topic => `
+          <button class="opt" data-topic="${escapeHtml(topic)}">
+            ${escapeHtml(topic)}
+            <small>Tap to read</small>
+          </button>
+        `).join('')}
+
+        <div class="education-section">
+          <h3>Wellness toolkit</h3>
+
+          <button class="opt" data-a="breathe">
+            🫁 Breathe
+            <small>Guided breathing for focus and calm</small>
+          </button>
+
+          <button class="opt" data-a="finch">
+            🐣 Finch
+            <small>Look after your pet by looking after yourself</small>
+          </button>
+
+          <button class="opt" data-a="snake">
+            🐍 Snake Xenzia
+            <small>Retro grounding game to interrupt panic loops</small>
+          </button>
+        </div>
+
+        <div class="education-section">
+          <h3>Interactive learning</h3>
+
+          <button class="opt" data-a="game">
+            🎯 20-section game
+            <small>${gd()}/20 sections complete</small>
+          </button>
+        </div>
+
+        <div class="education-section">
+          <h3>Learn by watching</h3>
+
+          <p class="small">
+            Explore short video lessons alongside the written learning
+            materials.
+          </p>
+
+          <button class="opt" data-a="videos">
+            ▶️ Video tutorials
+            <small>Watch short educational videos</small>
+          </button>
+        </div>
+      `;
+    }
+
+    function act(action) {
+      const actions = {
+        breathe,
+        finch,
+        snake,
+        game,
+        videos
+      };
+
+      if (typeof actions[action] === 'function') {
+        actions[action]();
+      }
+    }
+
+    function after() {
+      document.querySelectorAll('[data-topic]').forEach(button => {
+        button.onclick = () => {
+          const topic = button.dataset.topic;
+
+          modal(`
+            <h3>${escapeHtml(topic)}</h3>
+            <p class="small">${escapeHtml(TOPICS[topic] || '')}</p>
+            <button class="btn" onclick="close_()">Close</button>
+          `);
+        };
+      });
+    }
+
+    /*
+     * Fetch published educational resources from the existing API.
+     *
+     * Expected video resource fields include:
+     * id, title, topic, summary, contentType, resourceUrl, published, status.
+     */
+    async function loadEducationVideos() {
+      const response = await fetch('/api/education', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          response.status === 401 || response.status === 403
+            ? 'You may need to sign in again to access educational resources.'
+            : 'The video library could not be loaded. Please try again.'
+        );
+      }
+
+      const result = await response.json();
+
+      // Support either a plain array or a response wrapped in common keys.
+      const resources = Array.isArray(result)
+        ? result
+        : Array.isArray(result.resources)
+          ? result.resources
+          : Array.isArray(result.content)
+            ? result.content
+            : [];
+
+      return resources.filter(resource => {
+        const type = String(resource.contentType || '').toUpperCase();
+        const status = String(resource.status || '').toUpperCase();
+
+        return type === 'VIDEO'
+          && resource.published !== false
+          && (!status || status === 'PUBLISHED');
+      });
+    }
+
+    function videoCard(video, index) {
+      const title = video.title || 'Untitled video';
+      const topic = video.topic || 'General learning';
+      const summary = video.summary || 'Watch this short educational lesson.';
+      const duration = video.duration ? String(video.duration) : '';
+
+      return `
+        <article class="video-card">
+          <span class="video-topic">${escapeHtml(topic)}</span>
+
+          <h4>${escapeHtml(title)}</h4>
+
+          <p class="small">${escapeHtml(summary)}</p>
+
+          ${duration
+            ? `<p class="small">Duration: ${escapeHtml(duration)}</p>`
+            : ''
+          }
+
+          <button class="btn video-action" data-video-index="${index}">
+            ▶ Watch video
+          </button>
+        </article>
+      `;
+    }
+
+    async function videos() {
+      modal(`
+        <h3>▶️ Short video tutorials</h3>
+        <p class="small">
+          Loading published educational videos...
+        </p>
+        <div class="video-loading">Please wait...</div>
+        <button class="btn" onclick="close_()">Close</button>
+      `);
+
+      if (videoRequestInProgress) {
+        return;
+      }
+
+      videoRequestInProgress = true;
+
+      try {
+        educationVideos = await loadEducationVideos();
+        showVideoLibrary();
+      } catch (error) {
+        modal(`
+          <h3>▶️ Short video tutorials</h3>
+
+          <div class="video-empty">
+            <p>${escapeHtml(error.message || 'Unable to load videos.')}</p>
+
+            <p class="small">
+              If this problem continues, check your connection and
+              confirm that the education API is available.
+            </p>
+
+            <button class="btn" onclick="videos()">
+              Try again
+            </button>
+
+            <button class="btn" onclick="close_()" style="margin-top:8px">
+              Close
+            </button>
+          </div>
+        `);
+      } finally {
+        videoRequestInProgress = false;
+      }
+    }
+
+    function showVideoLibrary() {
+      const content = educationVideos.length
+        ? educationVideos.map(videoCard).join('')
+        : `
+          <div class="video-empty">
+            <h4>No videos available yet</h4>
+
+            <p>
+              Short video lessons will appear here when they have been
+              added to the Education Hub and published.
+            </p>
+
+            <p class="small">
+              In the meantime, you can explore the written learning
+              topics and wellness toolkit.
+            </p>
+          </div>
+        `;
+
+      modal(`
+        <h3>▶️ Short video tutorials</h3>
+
+        <p class="small">
+          Choose a lesson to watch. New videos will appear here when
+          they are published.
+        </p>
+
+        ${content}
+
+        <button class="btn" onclick="close_()" style="margin-top:12px">
+          Close
+        </button>
+      `);
+
+      document.querySelectorAll('[data-video-index]').forEach(button => {
+        button.onclick = () => {
+          const index = Number(button.dataset.videoIndex);
+          const video = educationVideos[index];
+
+          if (video) {
+            playEducationVideo(video);
+          }
+        };
+      });
+    }
+
+    /*
+     * Accept common YouTube links, Vimeo links, and direct video files.
+     * Only HTTPS links are allowed in the player.
+     */
+    function getVideoPlayer(url) {
+      let parsed;
+
+      try {
+        parsed = new URL(url);
+      } catch {
+        return null;
+      }
+
+      if (parsed.protocol !== 'https:') {
+        return null;
+      }
+
+      const host = parsed.hostname.toLowerCase();
+      let videoId = null;
+
+      if (host === 'youtu.be' || host.endsWith('.youtu.be')) {
+        videoId = parsed.pathname.split('/').filter(Boolean)[0];
+      } else if (
+        host === 'youtube.com'
+        || host.endsWith('.youtube.com')
+        || host === 'youtube-nocookie.com'
+        || host.endsWith('.youtube-nocookie.com')
+      ) {
+        if (parsed.pathname === '/watch') {
+          videoId = parsed.searchParams.get('v');
+        } else {
+          const parts = parsed.pathname.split('/').filter(Boolean);
+
+          if (['embed', 'shorts', 'live'].includes(parts[0])) {
+            videoId = parts[1];
+          }
+        }
+      }
+
+      if (videoId && /^[a-zA-Z0-9_-]{6,20}$/.test(videoId)) {
+        return {
+          kind: 'embed',
+          url: 'https://www.youtube-nocookie.com/embed/'
+            + encodeURIComponent(videoId)
+            + '?autoplay=1'
+        };
+      }
+
+      if (host === 'vimeo.com' || host.endsWith('.vimeo.com')) {
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        const possibleId = parts.find(part => /^\d+$/.test(part));
+
+        if (possibleId) {
+          return {
+            kind: 'embed',
+            url: 'https://player.vimeo.com/video/'
+              + encodeURIComponent(possibleId)
+              + '?autoplay=1'
+          };
+        }
+      }
+
+      if (/\.(mp4|webm|ogg)$/i.test(parsed.pathname)) {
+        return {
+          kind: 'file',
+          url: parsed.href
+        };
+      }
+
+      // For other providers, display a safe link instead of embedding
+      // an unknown page in an iframe.
+      return {
+        kind: 'link',
+        url: parsed.href
+      };
+    }
+
+    function playEducationVideo(video) {
+      const title = video.title || 'Educational video';
+      const player = getVideoPlayer(video.resourceUrl || '');
+
+      let playerMarkup = '';
+
+      if (!player) {
+        playerMarkup = `
+          <div class="video-empty">
+            <p>
+              This video does not have a valid HTTPS playback link.
+              Please contact the Education Hub administrator.
+            </p>
+          </div>
+        `;
+      } else if (player.kind === 'embed') {
+        playerMarkup = `
+          <iframe
+            class="video-player"
+            src="${escapeHtml(player.url)}"
+            title="${escapeHtml(title)}"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+          </iframe>
+        `;
+      } else if (player.kind === 'file') {
+        playerMarkup = `
+          <video
+            class="video-player"
+            controls
+            playsinline
+            preload="metadata">
+            <source src="${escapeHtml(player.url)}">
+            Your browser does not support video playback.
+          </video>
+        `;
+      } else {
+        playerMarkup = `
+          <div class="video-empty">
+            <p>
+              This video is hosted on an external platform and cannot
+              be embedded here.
+            </p>
+
+            <a href="${escapeHtml(player.url)}"
+               target="_blank"
+               rel="noopener noreferrer">
+              Open video in a new tab
+            </a>
+          </div>
+        `;
+      }
+
+      modal(`
+        <h3>${escapeHtml(title)}</h3>
+
+        <p class="small">${escapeHtml(video.topic || 'Education')}</p>
+
+        ${playerMarkup}
+
+        <p>${escapeHtml(video.summary || '')}</p>
+
+        <button class="btn" onclick="showVideoLibrary()">
+          ← Back to videos
+        </button>
+
+        <button class="btn" onclick="close_()" style="margin-top:8px">
+          Close
+        </button>
+      `);
+    }
+
+    CC.mount({
+      role: 's',
+      title: 'Education hub',
+      nav: 'learn',
+      root: '../../',
+      view,
+      act,
+      after
+    });
+  </script>
+</body>
+</html>
