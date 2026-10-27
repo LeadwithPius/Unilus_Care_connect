@@ -1,4 +1,3 @@
--- V24: persist guided triage answers and versioned wellbeing check-ins.
 ALTER TABLE wellness.triage_assessments
     ADD COLUMN questionnaire_version VARCHAR(30) NOT NULL DEFAULT 'triage-v1',
     ADD COLUMN responses JSONB NOT NULL DEFAULT '{}'::jsonb;
