@@ -134,7 +134,8 @@ public class TriageWellbeingService {
         List<Map<String, Object>> questions = jdbc.queryForList("""
             SELECT question_key, response_type, required
             FROM wellness.wellbeing_questionnaire_questions q
-            JOIN wellness.wellbeing_questionnaire_versions v USING (questionnaire_version)
+            JOIN wellness.wellbeing_questionnaire_versions v
+              ON v.version = q.questionnaire_version
             WHERE q.questionnaire_version = ? AND v.active = TRUE
             """, version);
         if (questions.isEmpty()) throw new IllegalArgumentException("Questionnaire version is not active.");
