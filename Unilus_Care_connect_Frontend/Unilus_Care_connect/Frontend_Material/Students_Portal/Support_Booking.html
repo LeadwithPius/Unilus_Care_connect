@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNILUS CareConnect · Support</title>
+<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Gloock&display=swap" rel="stylesheet">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script>
+// Support: book a session (category, consent, mode, counsellor, time). Also used to reschedule.
+function isPastAppointmentTime(date,time){return new Date(`${date}T${time}:00`)<=new Date()}
+function view(){
+ const s=S.step;
+ const head=`<h2 style="font-family: Gloock; font-size: 28px;">Book a session</h2><div class="small" style="margin-bottom:10px;">Step ${Math.min(s+1,5)} of 5</div>`;
+ const categoryIcons={'Academic Pressure':'Vector_Images___Browse_156_929_409_Stock_Photos__Vectors__and_Video-removebg-preview.png','Psycho-social':'Vector_Chat_Icon__Chat_Icons__Comment_Icon__Typing_Icon_PNG_and_Vector_with_Transparent_Background_for_Free_Download-removebg-preview.png','Substance & Drug Support':'smoking icon.png'};
+ if(S.booked&&s===0&&!S.followup)return `<div class="card"><h3>${S.bookingStatus==='pending'?'Request awaiting approval':'Your session has been approved'}</h3><div class="small">${S.slot}, ${S.mode}, with ${S.cns}.</div><button class="btn r" data-a="cancel">Cancel ${S.bookingStatus==='pending'?'request':'appointment'}</button></div>`;
+ if(s===0)return head+`<div class="support-grid">`+['Academic Pressure','Psycho-social','Substance & Drug Support'].map(c=>`<button class="opt support-category ${S.cat===c?'on':''}" data-cat="${c}"><img class="support-category-icon" src="${categoryIcons[c]}" alt=""><span>${c}</span></button>`).join('')+`</div><button class="btn support-action" ${S.cat?'':'disabled'} data-a="next">Continue →</button>`;
+ if(s===1)return head+`<div class="card"><h3>Before we continue</h3><div class="small">Your name and student number are never stored with your records. Only an anonymous token links your sessions. Counsellors see a student tag like #B17. Notes are encrypted. Reports hide any group smaller than 5.</div><label class="small" style="display:flex;gap:8px;margin-top:10px"><input type="checkbox" id="cons" ${S.consent?'checked':''}> I understand and agree</label></div><button class="btn support-action" id="cn" ${S.consent?'':'disabled'} data-a="next">Agree and continue →</button>`;
+ if(s===2)return head+`<div class="support-grid">`+['Face-to-Face','Voice Call','Chat'].map(m=>`<button class="opt ${S.mode===m?'on':''}" data-mode="${m}">${m}${m==='Face-to-Face'?'<small>On-campus clinic (default)</small>':'<small>Needs a short written reason</small>'}</button>`).join('')+`</div>`+
+  (S.mode!=='Face-to-Face'?`<textarea id="why" placeholder="Why can’t you come to the clinic? (e.g. off-campus, unwell)">${S.why}</textarea>`:'')+`<button class="btn support-action" id="mn" data-a="next">Continue →</button>`;
+ if(s===3){const selectedAvailable=CNS.some((c,i)=>c.n===S.cns&&cstat(i)[0]==='Available');return head+`<div class="support-grid">`+CNS.map((c,i)=>{const t=cstat(i),unavailable=t[0]!=='Available';return `<button class="opt support-counsellor ${S.cns===c.n?'on':''}" data-cns="${c.n}" ${unavailable?'disabled style="opacity:.55"':''}><span class="support-counsellor-heading"><img class="support-counsellor-icon" src="Profile-removebg-preview.png" alt=""><span><b>${c.n}</b><span class="pill" style="background:${t[1]};padding:2px 8px;font-size:11px;margin-left:8px">${t[0]}</span></span></span><small>${c.s}</small><small>${t[2]}</small><small>${c.l}</small></button>`}).join('')+`</div><button class="btn support-action" ${selectedAvailable?'':'disabled'} data-a="next">Continue →</button>`}
+ if(s===4&&S.mode!=='Face-to-Face')return head+`<div class="card"><h3>Request for approval.</h3><div class="small">You do not need to choose a date or time now. You and ${S.cns||'your counsellor'} will agree on one when you discuss your ${S.mode.toLowerCase()} session.</div></div><button class="btn support-action" data-a="confirm">${S.re?'Confirm reschedule':'Request session'}</button>`;
+ if(s===4){
+  const now=new Date(),today=new Date(now);today.setHours(0,0,0,0);
+  const currentMonth=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  if(!S.calendarMonth||S.calendarMonth<currentMonth)S.calendarMonth=currentMonth;
+  const [year,month]=S.calendarMonth.split('-').map(Number);
+  const firstDay=new Date(year,month-1,1).getDay(),daysInMonth=new Date(year,month,0).getDate();
+  const previousMonth=month===1?`${year-1}-12`:`${year}-${String(month-1).padStart(2,'0')}`;
+  const nextMonth=month===12?`${year+1}-01`:`${year}-${String(month+1).padStart(2,'0')}`;
+  const monthLabel=new Date(year,month-1,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const todayKey=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  if(S.appointmentDate&&S.appointmentDate<todayKey)S.appointmentDate=S.appointmentTime='';
+  const timeChoices=[...new Set(SLOTS.map(slot=>slot.split(' ').pop()))].sort();
+  if(S.appointmentDate===todayKey&&S.appointmentTime&&isPastAppointmentTime(S.appointmentDate,S.appointmentTime))S.appointmentTime='';
+  const calendarCells=Array(firstDay).fill('<span class="calendar-empty"></span>').join('')+Array.from({length:daysInMonth},(_,index)=>{const day=index+1,date=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`,past=date<todayKey;return `<button type="button" class="calendar-day${S.appointmentDate===date?' selected':''}" data-date="${date}" ${past?'disabled':''}>${day}</button>`}).join('');
+  const selectedDate=S.appointmentDate?new Date(`${S.appointmentDate}T12:00:00`).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'}):'Select an available date';
+  return head+(S.frozen?'<div class="card small">This counsellor’s schedule is paused.</div>':'')+`<section class="booking-date-picker"><div class="calendar-heading"><button type="button" class="calendar-month-button" data-month="${previousMonth}" ${S.calendarMonth<=currentMonth?'disabled':''} aria-label="Previous month">‹</button><strong>${monthLabel}</strong><button type="button" class="calendar-month-button" data-month="${nextMonth}" aria-label="Next month">›</button></div><div class="calendar-grid calendar-weekdays">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=>`<span>${day}</span>`).join('')}</div><div class="calendar-grid">${calendarCells}</div></section><div class="small calendar-selected-date">${selectedDate}</div><div class="calendar-time-label">Choose a time</div><div class="calendar-times">${timeChoices.map(time=>{const passed=!!S.appointmentDate&&isPastAppointmentTime(S.appointmentDate,time);return `<button type="button" class="calendar-time${S.appointmentTime===time?' selected':''}" data-time="${time}" ${!S.appointmentDate||passed?'disabled':''}>${time}</button>`}).join('')}</div><button class="btn support-action" ${S.appointmentDate&&S.appointmentTime?'':'disabled'} data-a="confirm">Confirm booking</button>`;
+ }
+}
+function act(a){
+ if(a==='next'){if(S.step===1&&!S.re)S.why='';if(S.step===2&&S.mode!=='Face-to-Face'){S.why=$('why').value.trim();if(S.why.length<5)return toast('Please add a short reason to use call or chat.')}if(S.step===3&&!CNS.some((c,i)=>c.n===S.cns&&cstat(i)[0]==='Available'))return toast('Please choose a counsellor who is available.');S.step++;return render()}
+ if(a==='confirm'){if(S.mode==='Face-to-Face'){const now=new Date(),today=new Date(now);today.setHours(0,0,0,0);const todayKey=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;if(!S.appointmentDate||!S.appointmentTime)return toast('Please choose a date and time.');if(S.appointmentDate<todayKey){S.appointmentDate=S.appointmentTime='';return toast('Please choose a date that has not passed.')}if(isPastAppointmentTime(S.appointmentDate,S.appointmentTime)){S.appointmentTime='';render();return toast('That time has passed. Please choose a later time.')}S.slot=`${new Date(`${S.appointmentDate}T12:00:00`).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})} · ${S.appointmentTime}`}const re=S.re,isFollowup=S.followup;if(isFollowup&&S.followupSession)S.sessionHistory.push(S.followupSession);S.followup=false;S.followupSession=null;S.re=false;S.supportRestart=false;if(S.mode!=='Face-to-Face')S.slot='Time to be arranged';S.booked=true;S.bookingStatus=S.mode==='Face-to-Face'?'approved':'pending';S.step=0;S.cin=S.cout='';S.callCompleted=false;if(re)S.transfers++;S.flash=S.bookingStatus==='pending'?'Request sent. Waiting for your counsellor to approve it.':re?'Rescheduled. Your counsellor was notified.':isFollowup?'Follow-up session booked. Your previous session is saved on your profile.':'Booked. A confirmation is on your profile.';return go('me')}
+ if(a==='cancel'){S.booked=false;S.bookingStatus='';S.supportRestart=true;S.cin=S.cout='';S.transfers=0;S.cat=S.cns=S.slot='';S.appointmentDate=S.appointmentTime='';S.why='';S.consent=false;S.step=0;render()}
+}
+function after(){
+ const q=(s,f)=>document.querySelectorAll(s).forEach(f);
+ q('[data-cat]',b=>b.onclick=()=>{S.cat=b.dataset.cat;if(S.bookingStatus==='denied')S.bookingStatus='';render()});
+ q('[data-mode]',b=>b.onclick=()=>{S.why=($('why')||{}).value||S.why;S.mode=b.dataset.mode;render()});
+ q('[data-cns]',b=>b.onclick=()=>{S.cns=b.dataset.cns;render()});
+ q('[data-month]',b=>b.onclick=()=>{S.calendarMonth=b.dataset.month;render()});
+ q('[data-date]',b=>b.onclick=()=>{S.appointmentDate=b.dataset.date;S.appointmentTime='';render()});
+ q('[data-time]',b=>b.onclick=()=>{S.appointmentTime=b.dataset.time;render()});
+ const c=$('cons');if(c)c.onchange=()=>{S.consent=c.checked;$('cn').disabled=!c.checked;save()};
+}
+CC.mount({role:'s',title:'Support',nav:'support',root:'../../',view,act,after});
+</script></body></html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNILUS CareConnect · Student progress</title>
+<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script>
+// Student progress: clinical notes by student tag, anonymised campus trends (groups under 5 are hidden).
+ function view(){return `<h2>Student progress & stats</h2><div class="card"><h3>Clinical notes</h3><div class="row"><span>#B17</span><span class="small">CBT · Phase 2</span></div><div class="row"><span>#C09</span><span class="small">ACT · Intake</span></div><div class="small" style="margin-top:6px">Only tags are shown, never names.</div></div><div class="card"><h3>Campus trends (anonymised)</h3><div class="row"><span>Leopards Hill · Year 2 · Stress</span><b>34%</b></div><div class="row"><span>Silverest · Year 4 · Stress</span><b>${'Hidden (n<5)'}</b></div><button class="btn o" data-a="export">Export anonymised report</button></div>`}
+function act(a){if(a==='export')toast('Anonymised PDF ready (demo).')}
+CC.mount({role:'c',title:'Student progress & stats',root:'../../',view,act});
+</script></body></html>

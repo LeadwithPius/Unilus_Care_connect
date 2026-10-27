@@ -1,0 +1,3 @@
+/* masked_call.js: masked call screen with a duration log. BACKEND TEAM: connect the WebRTC gateway here (POST /api/calls/{id}/start and /end). */
+let ct;function callUI(){let s=0;modal(`<h3>Masked call</h3><p class="small">Connecting through the secure gateway. Neither phone number is shown.</p><div style="font-size:30px;text-align:center" id="cs">00:00</div><button class="btn r" id="ce">End call</button>`);clearInterval(ct);ct=setInterval(()=>{s++;$('cs').textContent=String(s/60|0).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000);$('ce').onclick=()=>{clearInterval(ct);S.calls.push(s);if(S.mode==='Voice Call')S.callCompleted=true;save();close();toast('Call logged: '+s+' s. Numbers stayed hidden.')}}
+CC.cleanups.push(()=>clearInterval(ct));

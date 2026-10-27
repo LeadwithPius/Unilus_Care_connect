@@ -1,0 +1,46 @@
+<!DOCTYPE html><!-- tells the browser "this is a modern HTML5 page" -->
+<html lang="en"><!-- page language (helps screen readers) -->
+<head><!-- start of the invisible settings area -->
+  <meta charset="UTF-8"><!-- lets emojis and special characters display correctly -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- makes the page fit phone screens. FIX: removed the old "X-UA-Compatable" line (misspelt, and only for Internet Explorer) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/><!-- loads the Inter font used by the buttons and text on this page -->
+  <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#134f47"><!-- lets the page be installed as an app / colour of the phone's top bar -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css" integrity="sha512-QeR2VH+lsBE5LSAe1Q5EnTBbe7XTBubt8dG93Y7gidSgdMCr8nVqKcfKAMyN96SV8KDbZVTDXChatu5G2KQGzg==" crossorigin="anonymous" referrerpolicy="no-referrer"><!-- icon font (not used on this page yet, kept as you had it) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" /><!-- iPhone: open full screen when added to the home screen -->
+  <meta name="mobile-web-app-capable" content="yes" /><!-- Android: same -->
+  <title>Unilus CareConnect</title><!-- text on the browser tab -->
+  <link rel="stylesheet" href="Frontend_Material/Shared/styles.css"><!-- FIX: relative path, same style as login.html and the other pages. The old "/Unilus_Care_connect/..." path only works when the site is served from exactly that folder name -->
+</head>
+<body><!-- start of the visible page -->
+
+  <button class="btn-sos" id="sos" type="button"><!-- THE EMERGENCY BUTTON. styles.css pins it top-right of the window. id "sos" is what the script below attaches the popup to -->
+    <img src="icons8-phone-50.png" alt="" class="sos-img" ><!-- phone icon. FIX: if the picture file is missing, an emoji is shown instead, so the emergency button never looks blank -->
+    <span>Emergency hotline</span><!-- label. FIX: same words as the popup and the other pages (was "Crisis Line"). On phones styles.css hides the label and shows only the round icon -->
+  </button>
+
+  <section class="landing"><!-- FIX: was class "hero". Home.html and profile.html use "hero" for a small green banner, so the full-screen centred block now has its own name -->
+    <div class="blob blob--teal" aria-hidden="true"></div><!-- soft peach glow in the top-right corner (decoration only) -->
+    <div class="blob blob--peach" aria-hidden="true"></div><!-- soft grey-green glow in the bottom-left corner (decoration only) -->
+    <img src="Open circle · Heart logo.gif" alt="App Logo" class="logo"><!-- the logo. TIP: file names with spaces and "·" can fail on some servers; rename to e.g. logo.gif if it ever shows broken -->
+    <p class="wordmark_name">CareConnect</p><!-- big app name -->
+    <p class="wordmark_sub">UNILUS Student Wellness</p><!-- smaller line under it -->
+    <h1 class="headline">Your wellbeing <br> matters</h1><!-- main message; <br> = line break -->
+    <p class="pillars">Private &bull; Simple &bull; Safe</p><!-- three promises separated by dots (&bull;) -->
+    <a href="login.html"><button class="front-btn" type="button">Get Started</button></a><!-- goes to the login page (login.html must sit next to this file) -->
+    <p class="bottom_word">No app download required</p><!-- small line at the bottom -->
+  </section>
+
+  <div class="modal" id="md"><div class="card" id="mdc"></div></div><!-- the popup box. Same ids as the ones core.js builds on other pages, so modal() and close_() work here unchanged. Hidden until the SOS button is tapped -->
+  <div class="toast" id="ts"></div><!-- small message bar (core.js toast() writes into it) -->
+
+  <script src="Frontend_Material/Shared/core.js"></script><!-- FIX: relative path. Gives this page $, S, modal(), close_() and CC.closeAll(). Must load first -->
+  <script src="Frontend_Material/Shared/emergency_hotline.js"></script><!-- gives sosBody(): the red popup with the "Call ... now" button. It also fetches the hotline number -->
+  <!-- care_data.js, install_app.js and password_tools.js are not needed on this page, so they are not loaded (faster on mobile data). FIX: the old password_tools.js line had a stray \" and could never load -->
+  <script>
+    S.noClose=false;                                                                              // a popup left open when the tab was closed must not stay stuck
+    $('sos').onclick=()=>modal(sosBody()+'<button class="btn o" onclick="close_()">Close</button>');   // SOS tapped: show the emergency popup (same one as every other page) plus a Close button
+    $('md').onclick=e=>{if(e.target.id==='md'&&!S.noClose)CC.closeAll()};                         // tapping the dark area around the popup closes it
+    if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});   // same as login.html: lets pages you have opened work offline and lets the app be installed. manifest.json starts the installed app on this page, so it must register here too
+  </script>
+</body>
+</html>
