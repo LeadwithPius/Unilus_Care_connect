@@ -1,41 +1,733 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en">
+<head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#134f47">
     <title>UNILUS CareConnect · Support</title>
-    <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
-    <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
-</head><body>
-<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+    <link rel="manifest" href="../manifest.json">
+    <link rel="stylesheet" href="../Shared_Material/styles.css">
+</head>
+<body>
+<noscript>
+    <p style="padding:20px;font-family:sans-serif">
+        CareConnect needs JavaScript. Open this page in a supported browser.
+    </p>
+</noscript>
+
 <div class="phone" id="phone"></div>
-<script src="../../Frontend_Material/Shared/core.js"></script>
-<script src="../../Frontend_Material/Shared/care_data.js"></script>
-<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
-<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+
+<script src="../Shared_Material/api.js"></script>
+<script src="../Shared_Material/core.js"></script>
+<script src="../Shared_Material/care_data.js"></script>
+<script src="../Shared_Material/emergency_hotline.js"></script>
+<script src="../Shared_Material/password_tools.js"></script>
+
 <script>
-    // Support: book a session (category, consent, mode, counsellor, time). Also used to reschedule.
-    function view(){
-        const s=S.step;
-        const head=`<h2>Book a session</h2><div class="small" style="margin-bottom:10px">Step ${Math.min(s+1,5)} of 5</div>`;
-        if(S.booked&&s===0)return `<div class="card"><h3>You already have a session</h3><div class="small">${S.slot}, ${S.mode}, with ${S.cns}.</div><button class="btn r" data-a="cancel">Cancel appointment</button></div>`;
-        if(s===0)return head+['Academic Pressure','Psycho-social','Substance & Drug Support'].map(c=>`<button class="opt ${S.cat===c?'on':''}" data-cat="${c}">${c}</button>`).join('')+`<button class="btn" ${S.cat?'':'disabled'} data-a="next">Continue</button>`;
-        if(s===1)return head+`<div class="card"><h3>Before we continue</h3><div class="small">Your name and student number are never stored with your records. Only an anonymous token links your sessions. Counsellors see a student tag like #B17. Notes are encrypted. Reports hide any group smaller than 5.</div><label class="small" style="display:flex;gap:8px;margin-top:10px"><input type="checkbox" id="cons" ${S.consent?'checked':''}> I understand and agree</label></div><button class="btn" id="cn" ${S.consent?'':'disabled'} data-a="next">Agree and continue</button>`;
-        if(s===2)return head+['Face-to-Face','Voice Call','Chat'].map(m=>`<button class="opt ${S.mode===m?'on':''}" data-mode="${m}">${m}${m==='Face-to-Face'?'<small>On-campus clinic (default)</small>':'<small>Needs a short written reason</small>'}</button>`).join('')+
-            (S.mode!=='Face-to-Face'?`<textarea id="why" placeholder="Why can’t you come to the clinic? (e.g. off-campus, unwell)">${S.why}</textarea>`:'')+`<button class="btn" id="mn" data-a="next">Continue</button>`;
-        if(s===3)return head+CNS.map((c,i)=>{const t=cstat(i);return `<button class="opt ${S.cns===c.n?'on':''}" data-cns="${c.n}" ${t[0]==='Emergency'?'disabled style="opacity:.55"':''}><b>${c.n}</b><span class="pill" style="background:${t[1]};padding:2px 8px;font-size:11px;margin-left:8px">${t[0]}</span><small>${c.s}</small><small>${t[2]}</small><small>${c.l}</small></button>`}).join('')+`<button class="btn" ${S.cns?'':'disabled'} data-a="next">Continue</button>`;
-        if(s===4)return head+(S.frozen?'<div class="card small">This counsellor’s schedule is paused. Please choose another.</div>':'')+SLOTS.map(x=>`<button class="opt ${S.slot===x?'on':''}" data-slot="${x}">${x}</button>`).join('')+`<button class="btn" ${S.slot?'':'disabled'} data-a="confirm">Confirm booking</button>`;
+'use strict';
+
+/*
+ * CareConnect appointment booking.
+ *
+ * Counsellors, availability, bookings and cancellations are loaded
+ * from the backend. The browser's demo data is not used as proof
+ * that a booking has succeeded.
+ */
+
+const SUPPORT_CATEGORIES = [
+    { code: 'GENERAL_SUPPORT', label: 'General support' },
+    { code: 'ACADEMIC_STRESS', label: 'Academic stress' },
+    { code: 'PERSONAL_CONCERNS', label: 'Personal concerns' },
+    { code: 'RELATIONSHIPS', label: 'Relationships' },
+    { code: 'GRIEF_AND_LOSS', label: 'Grief and loss' }
+];
+
+const COUNSELLING_MODES = [
+    {
+        code: 'FACE_TO_FACE',
+        label: 'Face-to-face',
+        description: 'Meet in person.'
+    },
+    {
+        code: 'CALL',
+        label: 'Voice call',
+        description: 'Speak with your counsellor remotely.'
+    },
+    {
+        code: 'TRIAGE_CHAT',
+        label: 'Chat',
+        description: 'Discuss your support needs through chat.'
     }
-    function act(a){
-        if(a==='next'){if(S.step===2&&S.mode!=='Face-to-Face'){S.why=$('why').value.trim();if(S.why.length<5)return toast('Please add a short reason to use call or chat.')}S.step++;return render()}
-        if(a==='confirm'){const re=S.re;S.re=false;S.booked=true;S.step=0;if(re){S.transfers++;S.cin=S.cout=''}S.flash=re?'Rescheduled. Your counsellor was notified.':'Booked. A confirmation is on your profile.';return go('me')}
-        if(a==='cancel'){S.booked=false;S.cin=S.cout='';S.transfers=0;S.cat=S.cns=S.slot='';S.consent=false;S.step=0;render()}
+];
+
+const ALTERNATIVE_REASONS = [
+    { code: 'ACCESSIBILITY', label: 'Accessibility needs' },
+    { code: 'OFF_CAMPUS', label: 'I am off campus' },
+    { code: 'COUNSELLOR_RECOMMENDED', label: 'Recommended by my counsellor' }
+];
+
+const bookingData = {
+    counsellors: [],
+    appointments: [],
+    loading: false,
+    loaded: false,
+    error: '',
+    appointmentsError: ''
+};
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
+}
+
+function formatDate(value) {
+    if (!value) return 'Time to be confirmed';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value);
     }
-    function after(){
-        const q=(s,f)=>document.querySelectorAll(s).forEach(f);
-        q('[data-cat]',b=>b.onclick=()=>{S.cat=b.dataset.cat;render()});
-        q('[data-mode]',b=>b.onclick=()=>{S.why=($('why')||{}).value||S.why;S.mode=b.dataset.mode;render()});
-        q('[data-cns]',b=>b.onclick=()=>{S.cns=b.dataset.cns;render()});
-        q('[data-slot]',b=>b.onclick=()=>{S.slot=b.dataset.slot;render()});
-        const c=$('cons');if(c)c.onchange=()=>{S.consent=c.checked;$('cn').disabled=!c.checked;save()};
+
+    return new Intl.DateTimeFormat(undefined, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date);
+}
+
+function formatSlot(slot) {
+    const start = formatDate(slot.startsAt);
+    const end = slot.endsAt ? formatDate(slot.endsAt) : '';
+
+    return end ? `${start} – ${end}` : start;
+}
+
+function selectedCounsellor() {
+    return bookingData.counsellors.find(
+        counsellor => String(counsellor.profileId) === String(S.cns)
+    );
+}
+
+function selectedAvailability() {
+    const counsellor = selectedCounsellor();
+
+    if (!counsellor || !Array.isArray(counsellor.availability)) {
+        return null;
     }
-    CC.mount({role:'s',title:'Support',nav:'support',root:'../../',view,act,after});
-</script></body></html>
+
+    return counsellor.availability.find(
+        slot => String(slot.id) === String(S.slot)
+    ) || null;
+}
+
+function availableCounsellors() {
+    return bookingData.counsellors.filter(counsellor =>
+        Array.isArray(counsellor.availability) &&
+        counsellor.availability.length > 0
+    );
+}
+
+function appointmentId(appointment) {
+    return appointment.appointmentId ??
+        appointment.id ??
+        appointment.appointment_id ??
+        null;
+}
+
+function appointmentStatus(appointment) {
+    return String(appointment.status ?? 'UNKNOWN').toUpperCase();
+}
+
+function isActiveAppointment(appointment) {
+    return [
+        'REQUESTED',
+        'PENDING',
+        'CONFIRMED',
+        'BOOKED',
+        'SCHEDULED'
+    ].includes(appointmentStatus(appointment));
+}
+
+function appointmentDescription(appointment) {
+    const start = appointment.startsAt ??
+        appointment.startTime ??
+        appointment.appointmentTime ??
+        appointment.scheduledAt;
+
+    const counsellor = appointment.counsellorName ??
+        appointment.fullName ??
+        appointment.counsellor?.fullName ??
+        'Counsellor';
+
+    const status = appointmentStatus(appointment);
+
+    return `
+        <div class="card" style="margin-top:10px">
+            <b>${escapeHtml(formatDate(start))}</b>
+            <div class="small" style="margin-top:5px">
+                Counsellor: ${escapeHtml(counsellor)}
+            </div>
+            <div class="small">
+                Status: ${escapeHtml(status.replaceAll('_', ' '))}
+            </div>
+            ${
+                isActiveAppointment(appointment) && appointmentId(appointment)
+                ? `<button class="btn r"
+                           data-a="cancel"
+                           data-appointment-id="${escapeHtml(appointmentId(appointment))}">
+                       Cancel appointment
+                   </button>`
+                : ''
+            }
+        </div>
+    `;
+}
+
+async function loadBookingData(force = false) {
+    if (bookingData.loading) return;
+
+    if (bookingData.loaded && !force) return;
+
+    bookingData.loading = true;
+    bookingData.error = '';
+    bookingData.appointmentsError = '';
+
+    try {
+        const results = await Promise.allSettled([
+            API.counsellors(),
+            API.mine()
+        ]);
+
+        const counsellorResult = results[0];
+        const appointmentsResult = results[1];
+
+        if (counsellorResult.status === 'fulfilled') {
+            const data = counsellorResult.value;
+            bookingData.counsellors = Array.isArray(data)
+                ? data
+                : Array.isArray(data?.content)
+                    ? data.content
+                    : Array.isArray(data?.counsellors)
+                        ? data.counsellors
+                        : [];
+
+            if (!Array.isArray(data) &&
+                !Array.isArray(data?.content) &&
+                !Array.isArray(data?.counsellors)) {
+                bookingData.error =
+                    'The server returned an unexpected counsellor response.';
+            }
+        } else {
+            bookingData.error =
+                counsellorResult.reason?.message ||
+                'Could not load counsellors. Please try again.';
+        }
+
+        if (appointmentsResult.status === 'fulfilled') {
+            const data = appointmentsResult.value;
+            bookingData.appointments = Array.isArray(data)
+                ? data
+                : Array.isArray(data?.content)
+                    ? data.content
+                    : Array.isArray(data?.appointments)
+                        ? data.appointments
+                        : [];
+
+            if (!Array.isArray(data) &&
+                !Array.isArray(data?.content) &&
+                !Array.isArray(data?.appointments)) {
+                bookingData.appointmentsError =
+                    'The server returned an unexpected appointments response.';
+            }
+        } else {
+            bookingData.appointmentsError =
+                appointmentsResult.reason?.message ||
+                'Could not load your appointments.';
+        }
+
+        bookingData.loaded = true;
+    } finally {
+        bookingData.loading = false;
+
+        if (typeof render === 'function' && window.PAGE?.title === 'Support') {
+            render();
+        }
+    }
+}
+
+function appointmentListHtml() {
+    if (bookingData.appointmentsError) {
+        return `
+            <div class="card" style="margin-top:12px">
+                <p class="small">${escapeHtml(bookingData.appointmentsError)}</p>
+                <button class="btn o" data-a="refresh">Retry</button>
+            </div>
+        `;
+    }
+
+    if (!bookingData.appointments.length) {
+        return '<p class="small">You have no appointments recorded yet.</p>';
+    }
+
+    return bookingData.appointments.map(appointmentDescription).join('');
+}
+
+function view() {
+    const step = Number(S.step) || 0;
+
+    if (!bookingData.loaded && !bookingData.loading) {
+        return `
+            <h2>Book a session</h2>
+            <div class="card">
+                <p>Loading your support options…</p>
+            </div>
+        `;
+    }
+
+    if (bookingData.loading) {
+        return `
+            <h2>Book a session</h2>
+            <div class="card">
+                <p>Connecting to CareConnect…</p>
+            </div>
+        `;
+    }
+
+    if (bookingData.error && step === 3) {
+        return `
+            <h2>Book a session</h2>
+            <div class="card">
+                <p>${escapeHtml(bookingData.error)}</p>
+                <button class="btn" data-a="refresh">Try again</button>
+            </div>
+        `;
+    }
+
+    const heading = `
+        <h2>Book a session</h2>
+        <div class="small" style="margin-bottom:10px">
+            Step ${Math.min(step + 1, 5)} of 5
+        </div>
+    `;
+
+    if (step === 0) {
+        const categories = SUPPORT_CATEGORIES.map(category => `
+            <button class="opt ${S.cat === category.code ? 'on' : ''}"
+                    data-category="${category.code}">
+                ${escapeHtml(category.label)}
+            </button>
+        `).join('');
+
+        const activeAppointments = bookingData.appointments.filter(
+            isActiveAppointment
+        );
+
+        return heading + `
+            <p>What would you like support with?</p>
+            ${categories}
+            <button class="btn" data-a="next" ${S.cat ? '' : 'disabled'}>
+                Continue
+            </button>
+
+            <hr style="margin:22px 0;opacity:.25">
+
+            <h3>Your appointments</h3>
+            ${appointmentListHtml()}
+        `;
+    }
+
+    if (step === 1) {
+        return heading + `
+            <div class="card">
+                <h3>Before you continue</h3>
+                <p class="small">
+                    CareConnect will process the information needed to manage
+                    your appointment and connect you with support. Please do
+                    not include unnecessary sensitive information in booking
+                    fields. Your information will be handled according to the
+                    service's applicable privacy and data-protection practices.
+                </p>
+
+                <label class="small"
+                       style="display:flex;gap:8px;align-items:flex-start;margin-top:12px">
+                    <input type="checkbox"
+                           id="consent"
+                           ${S.consent ? 'checked' : ''}>
+                    <span>
+                        I understand and agree to proceed with the appointment
+                        request.
+                    </span>
+                </label>
+            </div>
+
+            <button class="btn" id="consentContinue"
+                    data-a="next" ${S.consent ? '' : 'disabled'}>
+                Agree and continue
+            </button>
+            <button class="btn o" data-a="back">Back</button>
+        `;
+    }
+
+    if (step === 2) {
+        const modes = COUNSELLING_MODES.map(mode => `
+            <button class="opt ${S.mode === mode.code ? 'on' : ''}"
+                    data-mode="${mode.code}">
+                <b>${escapeHtml(mode.label)}</b>
+                <small>${escapeHtml(mode.description)}</small>
+            </button>
+        `).join('');
+
+        const requiresReason = S.mode === 'CALL' || S.mode === 'TRIAGE_CHAT';
+
+        const reasonOptions = ALTERNATIVE_REASONS.map(reason => `
+            <option value="${reason.code}"
+                ${S.why === reason.code ? 'selected' : ''}>
+                ${escapeHtml(reason.label)}
+            </option>
+        `).join('');
+
+        return heading + `
+            <p>How would you prefer to meet?</p>
+            ${modes}
+
+            ${
+                requiresReason
+                ? `
+                    <label class="small" for="alternativeReason">
+                        Reason for requesting an alternative mode
+                    </label>
+                    <select class="fld" id="alternativeReason">
+                        <option value="">Select a reason</option>
+                        ${reasonOptions}
+                    </select>
+                  `
+                : ''
+            }
+
+            <button class="btn" data-a="next">Continue</button>
+            <button class="btn o" data-a="back">Back</button>
+        `;
+    }
+
+    if (step === 3) {
+        const counsellors = availableCounsellors();
+
+        if (bookingData.error) {
+            return heading + `
+                <div class="card">
+                    <p>${escapeHtml(bookingData.error)}</p>
+                    <button class="btn" data-a="refresh">Retry</button>
+                </div>
+            `;
+        }
+
+        if (!counsellors.length) {
+            return heading + `
+                <div class="card">
+                    <p>No counsellors currently have bookable availability.</p>
+                    <p class="small">
+                        Please try again later or contact the appropriate
+                        university support service.
+                    </p>
+                    <button class="btn o" data-a="refresh">Refresh availability</button>
+                    <button class="btn o" data-a="back">Back</button>
+                </div>
+            `;
+        }
+
+        return heading + `
+            <p>Select a counsellor with an available appointment.</p>
+
+            ${counsellors.map(counsellor => {
+                const id = counsellor.profileId;
+                const selected = String(S.cns) === String(id);
+
+                return `
+                    <button class="opt ${selected ? 'on' : ''}"
+                            data-counsellor="${escapeHtml(id)}">
+                        <b>${escapeHtml(counsellor.fullName || 'Counsellor')}</b>
+                        <small>
+                            ${escapeHtml(counsellor.professionalTitle || 'Counsellor')}
+                        </small>
+                        ${
+                            counsellor.biography
+                            ? `<small>${escapeHtml(counsellor.biography)}</small>`
+                            : ''
+                        }
+                        <small>
+                            ${counsellor.availability.length}
+                            available time slot(s)
+                        </small>
+                    </button>
+                `;
+            }).join('')}
+
+            <button class="btn" data-a="next" ${S.cns ? '' : 'disabled'}>
+                Continue
+            </button>
+            <button class="btn o" data-a="back">Back</button>
+        `;
+    }
+
+    if (step === 4) {
+        const counsellor = selectedCounsellor();
+
+        if (!counsellor) {
+            return heading + `
+                <div class="card">
+                    <p>Please select a counsellor first.</p>
+                    <button class="btn o" data-a="back">Back</button>
+                </div>
+            `;
+        }
+
+        const slots = Array.isArray(counsellor.availability)
+            ? counsellor.availability
+            : [];
+
+        return heading + `
+            <p>
+                Available appointments with
+                <b>${escapeHtml(counsellor.fullName || 'your counsellor')}</b>
+            </p>
+
+            ${
+                slots.length
+                ? slots.map(slot => `
+                    <button class="opt ${String(S.slot) === String(slot.id) ? 'on' : ''}"
+                            data-slot="${escapeHtml(slot.id)}">
+                        ${escapeHtml(formatSlot(slot))}
+                    </button>
+                  `).join('')
+                : '<div class="card">No slots are available. Go back and choose another counsellor.</div>'
+            }
+
+            <button class="btn" data-a="confirm"
+                    ${S.slot ? '' : 'disabled'}>
+                Confirm booking
+            </button>
+            <button class="btn o" data-a="back">Back</button>
+        `;
+    }
+
+    return heading + `
+        <div class="card">
+            <p>Something went wrong with the booking steps.</p>
+            <button class="btn" data-a="restart">Start again</button>
+        </div>
+    `;
+}
+
+async function act(action) {
+    if (action === 'back') {
+        S.step = Math.max(0, Number(S.step) - 1);
+        render();
+        return;
+    }
+
+    if (action === 'restart') {
+        S.step = 0;
+        S.cat = '';
+        S.consent = false;
+        S.mode = 'FACE_TO_FACE';
+        S.why = '';
+        S.cns = '';
+        S.slot = '';
+        render();
+        return;
+    }
+
+    if (action === 'refresh') {
+        bookingData.loaded = false;
+        await loadBookingData(true);
+        return;
+    }
+
+    if (action === 'next') {
+        if (S.step === 0 && !S.cat) {
+            return toast('Please select a support category.');
+        }
+
+        if (S.step === 1 && !S.consent) {
+            return toast('Please confirm that you agree to continue.');
+        }
+
+        if (S.step === 2) {
+            if (!S.mode) {
+                return toast('Please select a counselling mode.');
+            }
+
+            if (S.mode === 'CALL' || S.mode === 'TRIAGE_CHAT') {
+                if (!ALTERNATIVE_REASONS.some(reason => reason.code === S.why)) {
+                    return toast('Please select a reason for the alternative mode.');
+                }
+            } else {
+                S.why = '';
+            }
+        }
+
+        if (S.step === 3 && !S.cns) {
+            return toast('Please select a counsellor.');
+        }
+
+        S.step = Math.min(4, Number(S.step) + 1);
+        render();
+        return;
+    }
+
+    if (action === 'confirm') {
+        const counsellor = selectedCounsellor();
+        const slot = selectedAvailability();
+
+        if (!S.cat || !S.consent || !counsellor || !slot) {
+            return toast('Please check your selections before booking.');
+        }
+
+        const button = document.querySelector('[data-a="confirm"]');
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Submitting booking…';
+        }
+
+        try {
+            const result = await API.book({
+                availabilitySlotId: slot.id,
+                supportCategoryCode: S.cat,
+                counsellingMode: S.mode,
+                alternativeModeReason:
+                    S.mode === 'FACE_TO_FACE' ? null : S.why
+            });
+
+            // Reload from the backend; never mark a booking successful
+            // merely by changing local demo state.
+            bookingData.loaded = false;
+            await loadBookingData(true);
+
+            S.step = 0;
+            S.slot = '';
+            S.cns = '';
+            S.flash = 'Your appointment request was submitted successfully.';
+            save();
+            render();
+
+            toast(result?.message || S.flash);
+        } catch (error) {
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Confirm booking';
+            }
+
+            toast(error.message || 'The booking could not be submitted.');
+        }
+
+        return;
+    }
+
+    if (action === 'cancel') {
+        const id = document.querySelector(
+            '[data-a="cancel"]'
+        )?.dataset.appointmentId;
+
+        if (!id) {
+            return toast('The appointment ID could not be found.');
+        }
+
+        if (!window.confirm('Are you sure you want to cancel this appointment?')) {
+            return;
+        }
+
+        try {
+            await API.cancel(id);
+            bookingData.loaded = false;
+            await loadBookingData(true);
+            toast('Appointment cancellation submitted.');
+        } catch (error) {
+            toast(error.message || 'The appointment could not be cancelled.');
+        }
+    }
+}
+
+function after() {
+    document.querySelectorAll('[data-category]').forEach(button => {
+        button.onclick = () => {
+            S.cat = button.dataset.category;
+            render();
+        };
+    });
+
+    document.querySelectorAll('[data-mode]').forEach(button => {
+        button.onclick = () => {
+            S.mode = button.dataset.mode;
+
+            if (S.mode === 'FACE_TO_FACE') {
+                S.why = '';
+            }
+
+            render();
+        };
+    });
+
+    const reason = document.getElementById('alternativeReason');
+    if (reason) {
+        reason.onchange = () => {
+            S.why = reason.value;
+            save();
+        };
+    }
+
+    document.querySelectorAll('[data-counsellor]').forEach(button => {
+        button.onclick = () => {
+            S.cns = button.dataset.counsellor;
+            S.slot = '';
+            render();
+        };
+    });
+
+    document.querySelectorAll('[data-slot]').forEach(button => {
+        button.onclick = () => {
+            S.slot = button.dataset.slot;
+            render();
+        };
+    });
+
+    const consent = document.getElementById('consent');
+    if (consent) {
+        consent.onchange = () => {
+            S.consent = consent.checked;
+
+            const continueButton = document.getElementById('consentContinue');
+            if (continueButton) {
+                continueButton.disabled = !consent.checked;
+            }
+
+            save();
+        };
+    }
+
+    // Load real backend data only once on first render.
+    if (!bookingData.loaded && !bookingData.loading) {
+        loadBookingData();
+    }
+}
+
+CC.mount({
+    role: 's',
+    title: 'Support',
+    nav: 'support',
+    root: '../',
+    view,
+    act,
+    after
+});
+</script>
+</body>
+</html>

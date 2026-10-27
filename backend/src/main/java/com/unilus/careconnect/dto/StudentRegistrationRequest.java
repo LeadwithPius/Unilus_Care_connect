@@ -15,9 +15,9 @@ public class StudentRegistrationRequest {
     @Email
     @Size(max = 254)
     @Pattern(
-        regexp = "^[^@\\s]+@unilus\\.ac\\.zm$",
+        regexp = "^[^@\\s]+@(?:[a-z0-9-]+\\.)*unilus\\.ac\\.zm$",
         flags = Pattern.Flag.CASE_INSENSITIVE,
-        message = "Please use your @unilus.ac.zm university email address."
+        message = "Please use your university email address, including student subdomains."
     )
     private String email;
 

@@ -3,14 +3,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>UNILUS CareConnect · Administrator</title>
     <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
-    <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+    <link rel="stylesheet" href="../Shared_Material/styles.css">
 </head><body>
 <noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
 <div class="phone" id="phone"></div>
-<script src="../../Frontend_Material/Shared/core.js"></script>
-<script src="../../Frontend_Material/Shared/care_data.js"></script>
-<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
-<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script src="../Shared_Material/api.js"></script>
+<script src="../Shared_Material/core.js"></script>
+<script src="../Shared_Material/care_data.js"></script>
+<script src="../Shared_Material/emergency_hotline.js"></script>
+<script src="../Shared_Material/password_tools.js"></script>
 <script>
     // Administrator: counsellor accounts (add, activate/deactivate, reset password) and anonymised stats.
     function view(){const rows=[['Leopards Hill','Business','Year 2',12],['Leopards Hill','Tech & Sciences','Year 3',9],['Pioneer','Mass Media','Year 4',3],['Silverest','Education','Year 1',2]];return `<h2>Administrator</h2><div class="card"><h3>Counsellor accounts</h3>${S.cs.map((c,i)=>`<div class="row"><span>${c.n}<div class="small">${c.e}</div></span><span><button class="pill" style="background:${c.on?'var(--t)':'#999'}" data-ct="${i}">${c.on?'Active':'Inactive'}</button> <button class="pill" style="background:#2f4f4a" data-rp="${i}">Reset password</button></span></div>`).join('')}<input class="fld" id="an" placeholder="Full name" style="margin-top:10px"><input class="fld" id="ae" placeholder="UNILUS email"><button class="btn" data-a="addc">Add counsellor</button></div><div class="card"><h3>Weekly stats by campus, faculty and year</h3>${rows.map(r=>`<div class="row"><span>${r[0]} · ${r[1]} · ${r[2]}</span><b>${r[3]<5?'Hidden (n<5)':r[3]+' students'}</b></div>`).join('')}<div class="small" style="margin-top:6px">Groups smaller than 5 are masked so nobody can be identified.</div><button class="btn o" data-a="export">Export anonymised report</button></div><button class="btn o" data-a="chpw">Change password</button><button class="btn o" data-a="logout">Log out</button>`}
@@ -22,5 +23,5 @@
         document.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{const c=S.cs[+b.dataset.ct];c.on=!c.on;toast(c.on?'Account reactivated.':'Account deactivated. They can no longer log in.');render()});
         document.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>resetFor(+b.dataset.rp));
     }
-    CC.mount({role:'a',title:'Administrator',root:'../../',view,act,after});
+    CC.mount({role:'a',title:'Administrator',root:'../',view,act,after});
 </script></body></html>

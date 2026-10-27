@@ -1,69 +1,588 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en">
+<head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>UNILUS CareConnect · Log in</title>
-    <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#134f47">
-    <link rel="stylesheet" href="Frontend_Material/Shared/styles.css">
-</head><body>
-<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+    <meta name="theme-color" content="#134f47">
+    <title>UNILUS CareConnect</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="Shared_Material/styles.css">
+</head>
+<body>
+<noscript>
+    <p style="padding:20px;font-family:sans-serif">
+        CareConnect needs JavaScript enabled to continue.
+    </p>
+</noscript>
+
 <div class="phone" id="phone"></div>
-<script src="Frontend_Material/Shared/core.js"></script>
-<script src="Frontend_Material/Shared/care_data.js"></script>
-<script src="Frontend_Material/Shared/emergency_hotline.js"></script>
-<script src="Frontend_Material/Shared/install_app.js"></script>
-<script src="Frontend_Material/Shared/password_tools.js"></script>
+
+<script src="Shared_Material/api.js"></script>
+<script src="Shared_Material/core.js"></script>
+<script src="Shared_Material/care_data.js"></script>
+<script src="Shared_Material/emergency_hotline.js"></script>
+<script src="Shared_Material/install_app.js"></script>
 <script>
-    // index.html: log in / create account / forgot password for students, counsellors and the administrator.
-    function roleTabs(){return `<div style="display:flex;gap:6px;margin-bottom:12px">${[['s','Student'],['c','Counsellor'],['a','Admin']].map(x=>`<button class="pill" style="flex:1;padding:8px;background:${S.lr===x[0]?'var(--g)':'#8aa5a0'}" data-lr="${x[0]}">${x[1]}</button>`).join('')}</div>`}
-    function loginView(){
-        const sel=(id,o)=>`<select class="fld" id="${id}">${o.map(x=>`<option value="${[].concat(x)[0]}">${[].concat(x).pop()}</option>`).join('')}</select>`;
-        const inst=matchMedia('(display-mode: standalone)').matches?'':`<div class="hero"><b style="font-size:16px">Download the app today</b><div class="small" style="color:#cfe3df;margin:4px 0 8px">Add CareConnect to your home screen in one tap. No app store, and no sign-up needed to install.</div><button class="btn" style="background:#fff;color:var(--g);margin:0" id="inst">Download app</button></div>`;
-        const stu=S.lr==='s',idl=stu?'Student ID':'UNILUS email';
-        const link=(m,t)=>`<button data-lm="${m}" style="background:none;color:var(--t);font-size:13px;padding:8px 12px 8px 0;text-decoration:underline">${t}</button>`;
-        let b;
-        if(S.lm==='forgot')b=`<h2>Reset your password</h2><div class="small" style="margin-bottom:10px">Enter your ${idl.toLowerCase()}, one of your recovery codes and a new password. Each code works once.</div><div class="card">${lab(idl)}${inp('lid')}${lab('Recovery code')}${inp('lcode','XXXXX-XXXXX')}${lab('New password')}${inp('lnp','','password','new-password')}<button class="btn" id="lgo">Reset password</button></div>${link('in','Back to log in')}<div class="small">${stu?'Lost your codes too? Contact the counselling office for help.':'Lost your codes too? Ask the administrator to reset your password.'}</div>`;
-        else if(S.lm==='new'&&stu)b=`<h2>Create your account</h2><div class="small" style="margin-bottom:10px">We turn your ID into an anonymous code and never store it. You’ll get recovery codes in case you forget your password.</div><div class="card">${lab('Student ID')}${inp('lid')}${lab('Password')}${inp('lpw','','password','new-password')}<div class="small" style="margin:-4px 0 8px">8 or more characters, with a letter and a number.</div>${lab('Faculty')}${sel('lf',['Technology & Sciences','Business','Education','Health Sciences','Law','Humanities'])}${lab('Year of study')}${sel('ly',[1,2,3,4,5,6,7])}${lab('Campus')}${sel('lc',[['Leopards Hill','Leopards Hill (Lusaka)'],['Pioneer','Pioneer (Mass Media, Lusaka)'],['Silverest','Silverest (Chongwe)']])}<button class="btn" id="lgo">Create account</button></div>${link('in','I already have an account')}`;
-        else b=`<h2>${stu?'Welcome to CareConnect':S.lr==='c'?'Counsellor log in':'Administrator log in'}</h2><div class="small" style="margin-bottom:10px">${stu?'Log in with your student ID and password.':'Use your UNILUS email and password. Accounts are created by the administrator.'}</div><div class="card">${lab(idl)}${inp('lid')}${lab('Password')}${inp('lpw','','password','current-password')}<button class="btn" id="lgo">Log in</button></div>${link('forgot','Forgot password?')}${stu?link('new','Create account'):''}${stu?'':'<div class="small" style="margin-top:8px">Demo: m.lungu@unilus.edu.zm / Temp1234 or admin@unilus.edu.zm / Admin1234. You’ll be asked to set your own password.</div>'}`;
-        return inst+roleTabs()+b}
-    function bindLogin(){
-        document.querySelectorAll('[data-lr]').forEach(b=>b.onclick=()=>{S.lr=b.dataset.lr;S.lm='in';render()});
-        document.querySelectorAll('[data-lm]').forEach(b=>b.onclick=()=>{S.lm=b.dataset.lm;render()});
-        const g=$('lgo');if(g)g.onclick=doLogin;const i=$('inst');if(i)i.onclick=installApp}
-    const BADL='Incorrect ID or password, or the account is temporarily locked.';
-    function strike(a){a.fails=(a.fails||0)+1;if(a.fails>=5){a.lock=Date.now()+900000;a.fails=0}save()}
-    function doLogin(){
-        const id=($('lid').value||'').trim().toLowerCase();
-        if(S.lm==='forgot')return doReset(id);
-        const pw=$('lpw').value;
-        if(S.lm==='new'){
-            if(id.length<3)return toast('Enter your student ID.');
-            if(!pwOk(pw))return toast(PWMSG);
-            if(S.acc[id])return toast('We couldn’t create that account. If you already have one, log in or reset your password.');
-            const codes=mkCodes();S.acc[id]={pw,role:'s',codes,fails:0,must:0};S.fac=$('lf').value;S.yr=$('ly').value;S.camp=$('lc').value;S.me=id;S.role='s';S.in=true;save();return showCodes(codes,enter)}
-        const a=S.acc[id];
-        if(!a||a.role!==S.lr||(a.lock&&a.lock>Date.now()))return toast(BADL);
-        if(a.pw!==pw){strike(a);return toast(BADL)}
-        a.fails=0;
-        if(S.lr==='c'){const c=S.cs.find(x=>x.e===id);if(c&&!c.on)return toast('This account has been deactivated.');S.name=c?c.n:id}
-        if(S.lr==='a')S.name='Administrator';
-        S.me=id;S.role=S.lr;
-        if(a.must)return forceChange();
-        S.in=true;S.cview='dash';save();enter()}
-    function doReset(id){
-        const code=($('lcode').value||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase(),np=$('lnp').value,a=S.acc[id];
-        const bad=()=>toast('That ID and recovery code don’t match.');
-        if(!pwOk(np))return toast(PWMSG);
-        if(!a||a.role!==S.lr)return bad();
-        const i=a.codes.findIndex(c=>c.replace('-','')===code);
-        if(i<0){strike(a);return bad()}
-        a.codes.splice(i,1);a.pw=np;a.must=0;a.fails=0;a.lock=0;S.lm='in';render();
-        toast('Password changed. '+a.codes.length+' recovery codes left. Log in with your new password.')}
-    function enter(){location.replace(ROUTES[S.role])}
-    if(S.in)enter();
-    else{
-        CC.mount({public:true,title:'Welcome',root:'',act(){},
-            view:()=>loginView()+'<div class="small" style="margin-top:16px"><a href="#" id="rst" style="color:var(--t)">Reset demo data</a></div>',
-            after(){bindLogin();$('rst').onclick=e=>{e.preventDefault();resetDemo()}}});
-        if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+(() => {
+    'use strict';
+
+    const roleNames = {
+        s: 'Student',
+        c: 'Counsellor',
+        a: 'Administrator'
+    };
+
+    const roleValues = {
+        s: 'STUDENT',
+        c: 'COUNSELLOR',
+        a: 'ADMIN'
+    };
+
+    const routes = {
+        s: 'Students_Portal/Education_Hub.html',
+        c: 'Counsellors_Portal/Counsellors_FronPage.html',
+        a: 'Admin_Portal/Admin_Dashboard.html'
+    };
+
+    let selectedRole = 's';
+    let screen = 'login';
+    let busy = false;
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[char]);
     }
-</script></body></html>
+
+    function message(text, error = false) {
+        const box = $('notice');
+        if (!box) {
+            window.alert(text);
+            return;
+        }
+
+        box.textContent = text;
+        box.style.display = 'block';
+        box.style.padding = '10px';
+        box.style.margin = '12px 0';
+        box.style.borderRadius = '8px';
+        box.style.background = error ? '#fde8e8' : '#e4f5ed';
+        box.style.color = error ? '#842029' : '#134f47';
+    }
+
+    function setBusy(value) {
+        busy = value;
+        document.querySelectorAll('[data-submit]').forEach(button => {
+            button.disabled = value;
+            button.style.opacity = value ? '0.65' : '1';
+        });
+    }
+
+    function field(label, id, type = 'text', autocomplete = 'off', extra = '') {
+        return `
+            <label for="${id}" style="display:block;margin:12px 0 5px">
+                ${label}
+            </label>
+            <input class="fld"
+                   id="${id}"
+                   name="${id}"
+                   type="${type}"
+                   autocomplete="${autocomplete}"
+                   ${extra}
+                   required>
+        `;
+    }
+
+    function roleButtons() {
+        return `
+            <div style="display:flex;gap:6px;margin-bottom:14px">
+                ${Object.entries(roleNames).map(([key, label]) => `
+                    <button type="button"
+                            class="pill"
+                            data-role="${key}"
+                            style="flex:1;padding:9px;background:${
+                                selectedRole === key ? 'var(--g)' : '#8aa5a0'
+                            };color:white">
+                        ${label}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function installBanner() {
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            return '';
+        }
+
+        return `
+            <div class="hero">
+                <b style="font-size:16px">CareConnect on your home screen</b>
+                <div class="small" style="color:#cfe3df;margin:4px 0 8px">
+                    Install the app for convenient access.
+                </div>
+                <button class="btn"
+                        type="button"
+                        id="install-app"
+                        style="background:white;color:var(--g);margin:0">
+                    Install app
+                </button>
+            </div>
+        `;
+    }
+
+    function loginForm() {
+        const student = selectedRole === 's';
+
+        return `
+            ${roleButtons()}
+            <h2>${student ? 'Welcome to CareConnect' : `${roleNames[selectedRole]} log in`}</h2>
+            <p class="small">
+                ${student
+                    ? 'Sign in with your university email or student number.'
+                    : 'Use the account credentials provided to you.'}
+            </p>
+
+            <form id="login-form" class="card">
+                ${field(
+                    student ? 'University email or student number' : 'University email',
+                    'login-id',
+                    student ? 'text' : 'email',
+                    'username',
+                    'maxlength="254"'
+                )}
+                ${field('Password', 'login-password', 'password', 'current-password')}
+                <button class="btn" type="submit" data-submit>Log in</button>
+            </form>
+
+            <div style="margin-top:12px">
+                <button type="button" class="text-link" data-screen="forgot">
+                    Forgot password?
+                </button>
+                ${student ? `
+                    <button type="button" class="text-link" data-screen="register">
+                        Create student account
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    function registrationForm() {
+        return `
+            <h2>Create your student account</h2>
+            <p class="small">
+                Register with your university details. You must verify your
+                university email before you can log in.
+            </p>
+
+            <form id="register-form" class="card">
+                ${field('Full name', 'register-name', 'text', 'name', 'maxlength="150"')}
+                ${field(
+                    'University email',
+                    'register-email',
+                    'email',
+                    'email',
+                    'maxlength="254" placeholder="name@stud.unilus.ac.zm"'
+                )}
+                ${field(
+                    'Student number',
+                    'register-number',
+                    'text',
+                    'off',
+                    'maxlength="50"'
+                )}
+                ${field(
+                    'Password',
+                    'register-password',
+                    'password',
+                    'new-password',
+                    'minlength="12" maxlength="72"'
+                )}
+                <p class="small">
+                    Use a password between 12 and 72 characters.
+                </p>
+                ${field(
+                    'Confirm password',
+                    'register-confirm',
+                    'password',
+                    'new-password',
+                    'minlength="12" maxlength="72"'
+                )}
+                <button class="btn" type="submit" data-submit>
+                    Create account
+                </button>
+            </form>
+
+            <button type="button" class="text-link" data-screen="login">
+                Already registered? Log in
+            </button>
+        `;
+    }
+
+    function forgotForm() {
+        return `
+            <h2>Reset your password</h2>
+            <p class="small">
+                Enter your university email. If an eligible account exists,
+                CareConnect will send you a password-reset link.
+            </p>
+
+            <form id="forgot-form" class="card">
+                ${field('University email', 'forgot-email', 'email', 'email')}
+                <button class="btn" type="submit" data-submit>
+                    Send reset link
+                </button>
+            </form>
+
+            <button type="button" class="text-link" data-screen="login">
+                Back to log in
+            </button>
+        `;
+    }
+
+    function resetForm(token) {
+        if (!token) {
+            return `
+                <h2>Reset your password</h2>
+                <p class="small">
+                    This reset link is missing its token. Request a new link
+                    using the forgot-password form.
+                </p>
+                <button type="button" class="btn" data-screen="forgot">
+                    Request a new link
+                </button>
+            `;
+        }
+
+        return `
+            <h2>Choose a new password</h2>
+
+            <form id="reset-form" class="card">
+                ${field(
+                    'New password',
+                    'reset-password',
+                    'password',
+                    'new-password',
+                    'minlength="12" maxlength="72"'
+                )}
+                ${field(
+                    'Confirm new password',
+                    'reset-confirm',
+                    'password',
+                    'new-password',
+                    'minlength="12" maxlength="72"'
+                )}
+                <button class="btn" type="submit" data-submit>
+                    Update password
+                </button>
+            </form>
+        `;
+    }
+
+    function render() {
+        const query = new URLSearchParams(window.location.search);
+        const verificationToken = query.get('token');
+        const isVerify = window.location.pathname.endsWith('/verify-email');
+
+        let content;
+
+        if (isVerify) {
+            content = `
+                <h2>Verify your university email</h2>
+                <p class="small" id="verification-status">
+                    Verifying your email address…
+                </p>
+            `;
+        } else if (screen === 'register') {
+            content = registrationForm();
+        } else if (screen === 'forgot') {
+            content = forgotForm();
+        } else if (screen === 'reset') {
+            content = resetForm(verificationToken);
+        } else {
+            content = loginForm();
+        }
+
+        $('phone').innerHTML = `
+            <div class="top">
+                <span>CareConnect</span>
+                <b>UNILUS Student Support</b>
+            </div>
+            <div class="body" style="padding:18px">
+                ${installBanner()}
+                <div id="notice" role="status" aria-live="polite"
+                     style="display:none"></div>
+                ${content}
+            </div>
+        `;
+
+        const installButton = $('install-app');
+        if (installButton && typeof installApp === 'function') {
+            installButton.addEventListener('click', installApp);
+        }
+
+        document.querySelectorAll('[data-role]').forEach(button => {
+            button.addEventListener('click', () => {
+                selectedRole = button.dataset.role;
+                screen = 'login';
+                render();
+            });
+        });
+
+        document.querySelectorAll('[data-screen]').forEach(button => {
+            button.addEventListener('click', () => {
+                screen = button.dataset.screen;
+                render();
+            });
+        });
+
+        $('login-form')?.addEventListener('submit', handleLogin);
+        $('register-form')?.addEventListener('submit', handleRegistration);
+        $('forgot-form')?.addEventListener('submit', handleForgotPassword);
+        $('reset-form')?.addEventListener('submit', handleResetPassword);
+
+        if (isVerify) {
+            handleEmailVerification(verificationToken);
+        }
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+        if (busy) return;
+
+        const userId = $('login-id').value.trim();
+        const password = $('login-password').value;
+
+        if (!userId || !password) {
+            message('Enter your login details.', true);
+            return;
+        }
+
+        setBusy(true);
+
+        try {
+            const result = await API.login(
+                userId,
+                password,
+                roleValues[selectedRole]
+            );
+
+            const roles = (result.roles || []).map(role => String(role).toUpperCase());
+
+            if (!roles.includes(roleValues[selectedRole])) {
+                API.logout();
+                throw new Error('Your account does not have access to this portal.');
+            }
+
+            const currentUser = await API.me();
+            const shortRole = selectedRole;
+
+            sessionStorage.setItem('careconnect_role', shortRole);
+            sessionStorage.setItem('careconnect_user', JSON.stringify(currentUser));
+
+            // Temporary compatibility for existing portal code.
+            // The shared core will be updated to validate the JWT.
+            S.in = true;
+            S.role = shortRole;
+            S.me = currentUser.email || result.email || userId;
+            S.name = currentUser.fullName || currentUser.email || userId;
+
+            if (typeof save === 'function') save();
+
+            window.location.replace(routes[shortRole]);
+        } catch (error) {
+            API.logout();
+            message(error.message || 'Unable to log in. Please try again.', true);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleRegistration(event) {
+        event.preventDefault();
+        if (busy) return;
+
+        const fullName = $('register-name').value.trim();
+        const email = $('register-email').value.trim().toLowerCase();
+        const studentNumber = $('register-number').value.trim();
+        const password = $('register-password').value;
+        const confirmation = $('register-confirm').value;
+
+        if (!fullName || !email || !studentNumber || !password) {
+            message('Complete all registration fields.', true);
+            return;
+        }
+
+        if (!/^[^@\s]+@(?:[a-z0-9-]+\.)*unilus\.ac\.zm$/i.test(email)) {
+            message('Use your university email address, including @stud.unilus.ac.zm.', true);
+            return;
+        }
+
+        if (password.length < 12 || password.length > 72) {
+            message('Your password must be between 12 and 72 characters.', true);
+            return;
+        }
+
+        if (password !== confirmation) {
+            message('The passwords do not match.', true);
+            return;
+        }
+
+        setBusy(true);
+
+        try {
+            const result = await API.register({
+                fullName,
+                email,
+                studentNumber,
+                password
+            });
+
+            message(
+                result.message ||
+                'Registration received. Check your university email to verify your account.'
+            );
+
+            screen = 'login';
+            render();
+            message(
+                result.message ||
+                'Registration received. Check your university email to verify your account.'
+            );
+        } catch (error) {
+            message(error.message || 'Registration failed. Please check your details.', true);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleForgotPassword(event) {
+        event.preventDefault();
+        if (busy) return;
+
+        const email = $('forgot-email').value.trim().toLowerCase();
+
+        if (!email) {
+            message('Enter your university email.', true);
+            return;
+        }
+
+        setBusy(true);
+
+        try {
+            const result = await API.forgotPassword(email);
+            message(
+                result.message ||
+                'If an eligible account exists, a password-reset link will be sent.'
+            );
+        } catch (error) {
+            message(error.message || 'Unable to request a password reset.', true);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleResetPassword(event) {
+        event.preventDefault();
+        if (busy) return;
+
+        const token = new URLSearchParams(window.location.search).get('token');
+        const password = $('reset-password').value;
+        const confirmation = $('reset-confirm').value;
+
+        if (!token) {
+            message('The reset link is missing its token.', true);
+            return;
+        }
+
+        if (password.length < 12 || password.length > 72) {
+            message('Your password must be between 12 and 72 characters.', true);
+            return;
+        }
+
+        if (password !== confirmation) {
+            message('The passwords do not match.', true);
+            return;
+        }
+
+        setBusy(true);
+
+        try {
+            const result = await API.resetPassword(token, password);
+            window.history.replaceState({}, '', window.location.pathname);
+            screen = 'login';
+            render();
+            message(result.message || 'Your password has been reset. You can now log in.');
+        } catch (error) {
+            message(error.message || 'The reset link is invalid or has expired.', true);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function handleEmailVerification(token) {
+        const status = $('verification-status');
+
+        if (!token) {
+            status.textContent = 'This verification link is missing its token.';
+            return;
+        }
+
+        try {
+            const result = await API.verifyEmail(token);
+            status.textContent =
+                result.message || 'Your email has been verified. You can now log in.';
+        } catch (error) {
+            status.textContent =
+                error.message || 'This verification link is invalid or has expired.';
+        }
+    }
+
+    // Restore a valid session by asking the backend, not by trusting localStorage.
+    async function restoreSession() {
+        const token = sessionStorage.getItem('careconnect_token');
+        const role = sessionStorage.getItem('careconnect_role');
+
+        if (!token || !routes[role]) return;
+
+        API.token = token;
+
+        try {
+            const user = await API.me();
+            const roles = (user.roles || []).map(value => String(value).toUpperCase());
+
+            if (!roles.includes(roleValues[role])) {
+                API.logout();
+                sessionStorage.removeItem('careconnect_role');
+                sessionStorage.removeItem('careconnect_user');
+                return;
+            }
+
+            window.location.replace(routes[role]);
+        } catch {
+            API.logout();
+            sessionStorage.removeItem('careconnect_role');
+            sessionStorage.removeItem('careconnect_user');
+        }
+    }
+
+    render();
+
+    if ('serviceWorker' in navigator &&
+        (location.protocol === 'https:' || location.hostname === 'localhost')) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const pathname = window.location.pathname;
+    if (!pathname.endsWith('/verify-email')) {
+        restoreSession();
+    }
+})();
+</script>
+</body>
+</html>

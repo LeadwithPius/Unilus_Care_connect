@@ -3,14 +3,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>UNILUS CareConnect · Counsellor dashboard</title>
     <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
-    <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+    <link rel="stylesheet" href="../Shared_Material/styles.css">
 </head><body>
 <noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
 <div class="phone" id="phone"></div>
-<script src="../../Frontend_Material/Shared/core.js"></script>
-<script src="../../Frontend_Material/Shared/care_data.js"></script>
-<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
-<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script src="../Shared_Material/api.js"></script>
+<script src="../Shared_Material/core.js"></script>
+<script src="../Shared_Material/care_data.js"></script>
+<script src="../Shared_Material/emergency_hotline.js"></script>
+<script src="../Shared_Material/password_tools.js"></script>
 <script>
     // Counsellor dashboard: availability, emergency control, priority triage queue, attendance log.
     function view(){return `<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><h2 style="margin:0">Welcome back, ${S.name}</h2></div>
@@ -28,5 +29,5 @@
         else if(a==='respond'){S.crisis=Math.max(0,S.crisis-1);toast('Crisis case #C09 opened.');render()}
         else if(a==='notes')modal(`<h3>Student #B17</h3><p class="small">Framework: CBT. Phase 2. Last session: sleep and exam worry. Notes are encrypted.</p><button class="btn" onclick="close_()">Close</button>`);
     }
-    CC.mount({role:'c',title:'Counsellor dashboard',root:'../../',view,act});
+    CC.mount({role:'c',title:'Counsellor dashboard',root:'../',view,act});
 </script></body></html>

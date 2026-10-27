@@ -8,9 +8,9 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function resetDemo(){try{localStorage.removeItem(KEY)}catch(e){}location.reload()}
 
 /* where each role lands after logging in (paths are relative to index.html) */
-const ROUTES={s:'Frontend_Material/Students_Portal/Education_Hub.html',c:'Frontend_Material/Counsellors_Portal/Counsellors_FronPage.html',a:'Frontend_Material/Admin_Portal/Admin_Dashboard.html'};
+const ROUTES={s:'Students_Portal/Education_Hub.html',c:'Counsellors_Portal/Counsellors_FronPage.html',a:'Admin_Portal/Admin_Dashboard.html'};
 /* student bottom tabs and counsellor menu (files sit in the same folder as the page using them) */
-const PAGES={learn:'Education_Hub.html',home:'Home.html',support:'Support_Booking.html',me:'profile.html'};
+const PAGES={learn:'Education_Hub.html',home:'Home.html',support:'Support_Booking.html',me:'Profile.html'};
 const NAV=[['learn','🎓','Learn'],['home','🏠','Home'],['support','💬','Support'],['me','👤','Me']];
 const CNAV=[['Counsellors_FronPage.html','📊 Dashboard & triage'],['Counsellors_Profile.html','🧑 My profile & socials'],['Student_Progress.html','📈 Student progress & stats'],['Counsellors_Calendar.html','📅 Calendar & Google sync']];
 function go(tab){save();location.href=PAGES[tab]}
@@ -23,10 +23,47 @@ window.close_=close;
 const CC={
   cleanups:[],   // tool files register timers to stop when a popup is dismissed
   closeAll(){CC.cleanups.forEach(f=>f());close()},
-  logout(){S.in=false;S.cview='dash';save();location.replace(PAGE.root+'index.html')},
-  mount(P){
+  logout(){
+    if (typeof API !== 'undefined') API.logout();
+    sessionStorage.removeItem('careconnect_role');
+    sessionStorage.removeItem('careconnect_user');
+    S.in=false;
+    S.cview='dash';
+    save();
+    location.replace(PAGE.root+'index.html');
+  },
+  async mount(P){
     window.PAGE=P;
-    if(!P.public&&(!S.in||S.role!==P.role)){location.replace(P.root+'index.html');return}
+
+    if(!P.public){
+      const token=sessionStorage.getItem('careconnect_token');
+      const savedRole=sessionStorage.getItem('careconnect_role');
+      const expectedRoles={s:'STUDENT',c:'COUNSELLOR',a:'ADMIN'};
+      if(!token || savedRole!==P.role || typeof API==='undefined'){
+        CC.logout();
+        return;
+      }
+
+      API.token=token;
+      try{
+        const currentUser=await API.me();
+        const actualRoles=(currentUser.roles||[])
+          .map(role=>String(role).toUpperCase());
+
+        if(!actualRoles.includes(expectedRoles[P.role])){
+          throw new Error('Your account does not have access to this portal.');
+        }
+
+        S.in=true;
+        S.role=P.role;
+        S.me=currentUser.email||'';
+        S.name=currentUser.fullName||currentUser.email||'';
+        save();
+      }catch(error){
+        CC.logout();
+        return;
+      }
+    }
     const c=P.role==='c';
     $('phone').innerHTML=`<div class="top">${c?'<button id="hb" style="background:none;font-size:22px;color:var(--g)" aria-label="Menu">☰</button>':'<span>9:41</span>'}<b>${P.title}</b><button class="sos" id="sos">🚨 Emergency hotline</button></div>
     <div class="body" id="body"></div><div class="nav" id="nav"></div>
@@ -66,7 +103,7 @@ function render(){
   if(typeof stopSnake==='function')stopSnake();
   const v=PAGE.view();
   $('body').innerHTML=pageTop()+v+pageBottom(v);
-  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==='logout')CC.logout();else if(a==='chpw')changePw();else PAGE.act(a)});
+  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==='logout')CC.logout();else if(a==='chpw')changePw();else PAGE.act(a,b)});
   if(PAGE.after)PAGE.after();
   save();
 }

@@ -3,17 +3,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>UNILUS CareConnect · Student profile</title>
     <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
-    <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+    <link rel="stylesheet" href="../Shared_Material/styles.css">
 </head><body>
 <noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
 <div class="phone" id="phone"></div>
-<script src="../../Frontend_Material/Shared/core.js"></script>
-<script src="../../Frontend_Material/Shared/care_data.js"></script>
-<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
-<script src="../../Frontend_Material/Shared/password_tools.js"></script>
-<script src="../../Frontend_Material/Shared/wellbeing_checkin.js"></script>
-<script src="../../Frontend_Material/Shared/learning_game.js"></script>
-<script src="../../Frontend_Material/Shared/masked_call.js"></script>
+<script src="../Shared_Material/api.js"></script>
+<script src="../Shared_Material/core.js"></script>
+<script src="../Shared_Material/care_data.js"></script>
+<script src="../Shared_Material/emergency_hotline.js"></script>
+<script src="../Shared_Material/password_tools.js"></script>
+<script src="../Shared_Material/wellbeing_checkin.js"></script>
+<script src="../Shared_Material/learning_game.js"></script>
+<script src="../Shared_Material/masked_call.js"></script>
 <script>
     // Me: profile, upcoming session (check-in/out, call, reschedule), learning progress, wellbeing check-in.
     function view(){
@@ -32,5 +33,5 @@
         else if(a==='support')go('support');
         else if(a==='checkin')checkin();
     }
-    CC.mount({role:'s',title:'Student profile',nav:'me',root:'../../',view,act});
+    CC.mount({role:'s',title:'Student profile',nav:'me',root:'../',view,act});
 </script></body></html>

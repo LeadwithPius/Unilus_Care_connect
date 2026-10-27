@@ -141,9 +141,9 @@ public class StudentService {
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         if (normalizedEmail.length() > 254
                 || !normalizedEmail.matches(
-                        "^[a-z0-9.!#$%&'*+/=?^`{|}~-]+@unilus\\.ac\\.zm$")) {
+                        "^[a-z0-9.!#$%&'*+/=?^`{|}~-]+@(?:[a-z0-9-]+\\.)*unilus\\.ac\\.zm$")) {
             throw new IllegalArgumentException(
-                    "Please use a valid @unilus.ac.zm university email address.");
+                    "Please use a valid university email address, including student subdomains.");
         }
 
         if (studentNumber == null || studentNumber.isBlank()) {
