@@ -32,8 +32,11 @@ public class SecurityConfig {
                     "/api/auth/verify-email"
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/triage/counsellor/**").hasRole("COUNSELLOR")
+                .requestMatchers("/api/triage/**").hasRole("STUDENT")
                 .requestMatchers("/api/education/**", "/api/game/**").hasRole("STUDENT")
                 .requestMatchers("/api/appointments/**").hasRole("STUDENT")
+                .requestMatchers("/api/counsellor/**").hasRole("COUNSELLOR")
                 .requestMatchers("/api/auth/**").authenticated()
                 .anyRequest().authenticated()
             )
