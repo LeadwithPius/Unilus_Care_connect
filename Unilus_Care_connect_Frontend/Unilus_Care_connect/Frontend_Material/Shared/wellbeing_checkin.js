@@ -1,0 +1,11 @@
+/* wellbeing_checkin.js: the 9-question, non-diagnostic check-in. A high score points to the Emergency hotline and priority booking. */
+function checkin(){
+ const ans=Array(QS.length).fill(null);
+ modal(`<div class="checkin-questionnaire"><h3>Wellbeing check-in</h3><div class="small" style="margin-bottom:6px">0 = not at all, 1 = a few days, 2 = half the days, 3 = nearly every day</div>${QS.map((q,i)=>`<div class="checkin-question"><div class="small">${q}</div><div class="checkin-answers">${[0,1,2,3].map(n=>`<button class="pill" style="flex:1;background:#cfdcd8;color:var(--g)" data-q="${i}" data-n="${n}">${n}</button>`).join('')}</div></div>`).join('')}<button class="btn" id="sub">See result</button></div>`);
+ document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ans[b.dataset.q]=+b.dataset.n;document.querySelectorAll(`[data-q="${b.dataset.q}"]`).forEach(x=>{x.style.background='#cfdcd8';x.style.color='var(--g)'});b.style.background='var(--g)';b.style.color='#fff'});
+ $('sub').onclick=()=>{if(ans.includes(null))return toast('Please answer every question.');const s=ans.reduce((a,b)=>a+b,0);S.hist.push({i:S.hist.length+1,s});
+  if(s>=20)modal(`<div class="checkin-questionnaire"><h3 style="color:var(--r)">It sounds like a hard week</h3><p class="small">Your score was ${s}/27. You don't have to handle this alone. If you need to speak to someone now, tap Emergency hotline.</p><button class="btn r" onclick="close_();go('support')">Book priority session</button><button class="btn o" onclick="close_();render()">Not now</button></div>`);
+  else if(s>=15)modal(`<div class="checkin-questionnaire"><h3 style="color:var(--o)">Things feel a little off lately?</h3><p class="small">Your score was ${s}/27. Talking to someone can help lighten the load. You may benefit from a counselling session. Tap Book priority session to schedule one.</p><button class="btn o" onclick="close_();go('support')">Book priority session</button><button class="btn" onclick="close_();render()">Not now</button></div>`);
+  else modal(`<div class="checkin-questionnaire"><h3>You’re coping well</h3><p class="small">Your score was ${s}/27. Keep it up with a few minutes in the wellness toolkit.</p><button class="btn" onclick="close_();go('learn')">Open toolkit</button></div>`);
+  S.role==='s'&&render()}
+}

@@ -1,0 +1,344 @@
+:root {
+  --g:#134f47;      /* dark green: headings, bottom tabs, side menu, toast */
+  --g2:#1f6b61;     /* second green (spare) */
+  --t:#2d7a73;      /* teal: main buttons, links, selected items */
+  --r:#a8503b;      /* red: Crisis Line popup, red buttons */
+  --o:#8a7a1a;      /* amber: "In session" badge */
+  --bg:#f4f5f1;     /* page background */
+  --c:#fff;         /* card background */
+  --tx:#14312d;     /* main text */
+  --mu:#5d716d;     /* muted grey text */
+  --ln:#dfe5e1;     /* borders and divider lines */
+  --stage:#e9ede9;  /* background around the app column on wide screens */
+}
+@media (prefers-color-scheme: dark) { :root { --stage:#0a2622; --bg:#f4f5f1 } }  /* dark-mode screens: darker stage */
+:root[data-theme=light] { --stage:#e9ede9 }                                       /* forces the light stage */
+
+/* ---------- 2. RESET + PAGE ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;   /* width includes padding and border, so boxes never overflow */
+  margin: 0;                /* remove the browser's default outer spacing */
+  padding: 0;               /* remove the browser's default inner spacing */
+}
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;   /* the app font. CHANGE THE FONT HERE (e.g. 'Inter', sans-serif after adding it from Google Fonts) */
+  background: var(--bg);    /* page colour (set in section 1) */
+  min-height: 100vh;        /* at least the full screen height */
+  overflow-x: hidden;       /* prevent sideways scrolling on phone-sized screens */
+}
+button { font: inherit; cursor: pointer; border: 0 }   /* buttons use the page font, show a hand cursor, no border */
+h2 { font-size: 22px; color: var(--g); margin: 2px 0 10px }   /* page headings */
+h3 { font-size: 16px; color: var(--g); margin-bottom: 6px; text-align: center; }   /* popup / card headings */
+.small { font-size: 12px; color: var(--mu); line-height: 1.4 } /* small grey helper text (used everywhere) */
+.hid { display: none }                                         /* add class "hid" to hide anything */
+.load-fail { margin: 20px; padding: 14px; background: #fbeeea; color: #7a2a1a; font: 14px sans-serif; border-radius: 10px }  /* red "could not load" message */
+.back-btn { position: fixed; top: 10px; left: 10px; background: none; border: 0; z-index: 6 }
+.back-btn img { width: 40px; height: 30px; object-fit: contain}
+.menu-btn { background: none; font-size: 22px; color: var(--g) }  /* the ☰ button on counsellor pages */
+.phone { display: flex; flex-direction: column; min-height: 100vh; }
+.body { flex: 1; padding: 14px 14px 80px }  /* keep room below the content so the fixed bottom nav never covers the last items */
+.body.student-body:not(.student-body-learn) { padding-top: 54px; }
+@media (max-width: 600px) {
+  .top { padding-right: 78px }   /* phones: Crisis Line is a small circle, so less room needed */
+  html, body { overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  .phone { overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  .phone::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  .body { padding-bottom: 88px; }
+}
+@media (min-width: 900px) {                                  /* big screens: */
+  .body { padding: 2px 2px }                               /*   roomier content */
+}
+.app-logo{
+  width: 80px;
+  right: 0;
+  left: 0;
+  margin: 1px;
+}
+.home-checkin-hero {
+  position: relative;
+  container-type: inline-size;
+  width: min(calc(100vw - 48px), 1080px);
+  aspect-ratio: 2 / 1;
+  margin: 0 0 0 50%;
+  transform: translateX(-50%);
+}
+.wellness-img{
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+  border-radius: 18px;
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  .home-checkin-hero { width: calc(100vw - 32px); }
+}
+.home-checkin-hero .well-btn {
+  position: absolute;
+  top: 73%;
+  left: 2%;
+  padding: clamp(6px, 1.3cqw, 16px) clamp(10px, 2cqw, 22px);
+  border: 1px solid var(--g);
+  border-radius: 18px;
+  background: var(--g);
+  color: #fff;
+  font: 600 clamp(10px, 2cqw, 22px)/1.2 'Inter', sans-serif;
+}
+.nav-learn, .nav-home, .nav-me{
+  width: 28px;
+  height: 28px;
+}
+.nav-support{
+  width:25px;
+  height: 25px;
+}
+
+/* LOGIN PAGE LAYOUT: only the login page has class "public" (added by core.js).
+   No boxed column, no edges, no top bar: just the form centred on the page. */
+body.public .top { display: none }                       /* REMOVES the top bar. Delete this line to bring the bar back */
+body.public .body { width: 100%; max-width: 440px; margin: 0 auto; padding: 56px 16px 24px }   /* the form: 440px wide, centred. Change 440px for a wider/narrower form; 56px = space above it, clears the Crisis Line button */
+.top { display: flex; align-items: center; justify-content: flex-start; padding: 10px 14px 0; }
+
+/* ---------- 4. CRISIS LINE BUTTON (top-right, on every page) ---------- */
+.btn-sos {
+  position: fixed;                /* stays in the same place in the window while the page scrolls */
+  display: inline-flex;           /* icon and text side by side */
+  align-items: center; justify-content: center;   /* centred in the button */
+  gap: 14px;                      /* space between icon and text */
+  padding: 9px 9px;               /* inside spacing */
+  border: 1px solid #dde8e6;      /* thin pale border */
+  top: calc(10px + env(safe-area-inset-top, 0px)); right: 14px;   /* where the button sits in the window. MOVE THE BUTTON by editing top/right here */
+  border-radius: 999px;           /* fully rounded pill. 50% = circle, 8px = rounded square */
+  background: #da624d;            /* red button colour */
+  font: 650 15px/1 'Inter', sans-serif;   /* weight, size, line height, font */
+  font-size: 9.9px;               /* text size (this line wins over the 15px above) */
+  letter-spacing: .06em;          /* space between letters */
+  text-transform: uppercase;      /* CAPITAL LETTERS */
+  text-decoration: none;          /* no underline */
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(218,98,77,.28);   /* soft red glow: x, y, blur, colour */
+  transition: transform .3s cubic-bezier(.22,.61,.36,1);   /* smooth hover movement */
+  will-change: transform;         /* performance hint for the animation */
+  z-index: 6;                     /* above the top bar and page content, below popups */
+}
+.btn-sos span { color: #fff }     /* the "Emergency hotline" text colour */
+.sos-img { display: block; width: 24px; height: 24px; margin: 0; object-fit: contain; flex: none; filter: brightness(0) invert(1) }
+.btn-sos:hover, .btn-sos:focus-visible {         /* when hovered or keyboard-focused: */
+  transform: translateY(-4px);                   /*   lift up 4px */
+  box-shadow: 0 8px 20px rgba(227,160,105,.45), 0 0 18px rgba(255,194,124,.6);   /*   orange glow */
+}
+@media (max-width: 600px) {       /* phones: show only the round icon */
+  .btn-sos { width: 56px; height: 56px; padding: 0; gap: 0; border-radius: 50% }
+  .btn-sos span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }  /* hide the text but keep it for screen readers */
+}
+
+/* ---------- 5. BUTTONS + FORM FIELDS ---------- */
+.btn {                            /* main full-width button */
+  background: var(--g);           /* dark green */
+  color: #fff;                    /* white text */
+  border-radius: 18px;            /* rounded corners */
+  padding: 11px;                  /* inside spacing */
+  width: 100%;                    /* full width */
+  font-weight: 600; font-size: 13px;
+  margin-top: 8px;                /* gap above */
+}
+.opt { background: #fff; color: var(--g); border: 1.5px solid var(--g) }   /* "outline" version: add class "o" */
+.opt:not(.hub-button) { background: var(--g); color: #fff; border-color: var(--g); border-radius: 18px; }
+.opt:not(.hub-button).on { background: var(--g); color: #fff; border-color: var(--g); }
+.opt:hover, .opt:focus-visible {         /* when hovered or keyboard-focused: */
+  transform: translateY(-4px);                   /*   lift up 4px */
+  box-shadow: 0 8px 20px rgba(116, 168, 120, 0.45), 0 0 12px rgba(254, 253, 250, 0.6);   
+}
+.btn.r { background: var(--g) }   /* use the shared dark-green button colour */
+.btn:disabled { opacity: .4 }     /* greyed out when disabled */
+.fld {                            /* every text box and dropdown */
+  width: 100%;
+  border: 1.5px solid var(--ln);  /* light border */
+  border-radius: 10px;
+  padding: 10px;
+  font: inherit; font-size: 13px;
+  margin: 4px 0 10px;             /* top, sides, bottom gaps */
+  background: #fff;
+}
+textarea { width: 100%; border: 1.5px solid var(--ln); border-radius: 10px; padding: 10px; font: inherit; font-size: 13px; min-height: 70px }
+.pill { border-radius: 99px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #fff; background: var(--t) }  /* small rounded label/button */
+
+/* ---------- 6. CARDS + LISTS ---------- */
+.card-learn { display: block; width: 100%; height: 100px; text-align: left; background: #fff; border: 1.5px solid #c9e6da; border-radius: 9px; padding: 9px; margin-bottom: 8px; font-size: 13px; color: var(--tx);  transition: transform .3s cubi}
+.card-support { display: block; width: 100%; height: 120px; text-align: left; background: #fff; border: 1.5px solid #c9e6da; border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 13px; color: var(--tx);  transition: transform .3s cubi}
+.student-body-home .card-learn, .student-body-home .card-support { display: flex; flex-direction: column; align-items: stretch; width: 100%; height: auto; min-height: 0; padding: 10px; overflow: visible; }
+.student-body-home .card-learn .btn, .student-body-home .card-support .btn { display: block; flex: 0 0 auto; width: 100%; min-width: 0; max-width: 100%; margin: auto 0 0; padding: 8px 6px; box-sizing: border-box; font-size: clamp(10px, 3vw, 13px); line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+.student-body-home .quick-access-card-title { display: flex; align-items: center; justify-content: flex-start; gap: 8px; text-align: left; font-size: 14px; margin-bottom: 6px; }
+.quick-access-title { display: flex; justify-content: center; gap: 19px; text-align: center; font-size: 16px; font-weight: 600; margin-bottom: 20px; margin-top:20px; font-family: Gloock, serif; color: var(--g); letter-spacing: 0.1rem;}
+.student-body-home .quick-access-grid { display: contents; }
+.student-body-home .card-learn, .student-body-home .card-support { min-height: 130px; padding: 9px; }
+.quick-access-grid .card-learn, .quick-access-grid .card-support { height: auto; min-height: 140px; padding: 9px; }
+.quick-access-icon { width: 32px; height: 28px; flex: 0 0 32px; object-fit: contain; padding: 4px; border-radius: 5px; background: #DCEAE4; right:0}
+@media (min-width: 760px) {
+  .student-body-home .quick-access-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+  .student-body-home .quick-access-grid .card-learn, .student-body-home .quick-access-grid .card-support { margin-bottom: 0; }
+}
+.card-learn .btn, .card-support .btn { background: var(--g); border: 1.5px solid var(--g); color: #fff; }
+.card-learn .btn:hover, .card-learn .btn:focus-visible,
+.card-support .btn:hover, .card-support .btn:focus-visible { background: var(--g2); border-color: var(--g2); }
+.card { background: var(--c); border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--ln)}   /* white rounded panel; also used for popups */
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--ln); font-size: 13px }  /* one line in a list */
+.row:last-child { border: 0 }     /* no line under the last row */
+.stats { display: flex; gap: 8px; margin-bottom: 12px }   /* row of number boxes */
+.stats div { flex: 1; background: #fff; border: 1px solid var(--ln); border-radius: 12px; padding: 10px; text-align: center; font-size: 10px; color: var(--mu) }
+.stats b { display: block; font-size: 20px; margin-top: 2px }   /* the big number */
+.opt { display: block; width: 100%; height: 150px; text-align: left; background: #DCEAE4; border: 1.5px solid #c9e6da; border-radius: 12px; padding: 12px; margin-bottom: 8px; font-size: 13px; color: var(--tx);  transition: transform .3s cubic-bezier(.22,.61,.36,1); will-change: transform; }  
+.opt.on { border-color: var(--t); background: #e8f3f1 }   /* the selected choice */
+.hub-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.hub-grid .hub-button { height: 100px; padding: 10px; }
+.hub-grid .learning-tool { display: flex; flex-direction: row; align-items: center; text-align: left; height: 100px; padding: 9px; font-family: 'Inter', sans-serif; }
+.hub-grid .learning-tool img { display: block; flex: 0 0 32px; width: 30px; height: 52px; object-fit: contain; margin: 0 12px 0 0; filter: brightness(0) saturate(100%) invert(26%) sepia(15%) saturate(1116%) hue-rotate(122deg) brightness(92%) contrast(91%); }
+.hub-grid .learning-tool img[src="video-play-icon.png"] { flex-basis: 32px; width: 30px; height: 52px; }
+.learning-tool-copy { min-width: 0} 
+.hub-button-title { font-size: 16px; font-weight: 600; }
+.learning-tool .hub-button-title { font-family: 'Inter', sans-serif; font-size: 14px; }
+.hub-grid .hub-button.hub-anxiety { background: #ede5f3; border-color: #e6c3f4; color: #000; }
+.hub-grid .hub-button.hub-stress { background: #f4ebe3; border-color: #ffcfb1; color: #000; }
+.hub-grid .hub-button.hub-depression { background: #DCEAE4; border-color: #c9e6da; color: #000; }
+.hub-grid .hub-button.hub-substance-drug-use { background: #f4ebe3; border-color: #ffcfb1; color: #000; }
+.hub-grid .hub-button.hub-videos { background: #DCEAE4; border-color: #c9e6da; color: #000; }
+.hub-grid .hub-button.hub-crisis { background: #ede5f3; border-color: #e6c3f4; color: #000; }
+.hub-grid .hub-button.hub-breathe { background: #DCEAE4; border-color: #c9e6da; color: #000; margin-bottom: 14px; font-family: 'Inter', sans-serif; }
+.hub-grid .hub-button.hub-finch { background: #ede5f3; border-color: #e6c3f4; color: #000; margin-bottom: 14px; font-family: 'Inter', sans-serif; }
+.hub-grid .hub-button.hub-snake { background: #f4ebe3; border-color: #ffcfb1; color: #000; margin-bottom: 14px; font-family: 'Inter', sans-serif; }
+.hub-grid .hub-button.hub-breathe small { color: #444; font-family: 'Inter', sans-serif; font-size: 10px; }
+.hub-grid .hub-button.hub-finch small { color: #444; font-family: 'Inter', sans-serif; font-size: 10px; }
+.hub-grid .hub-button.hub-snake small { color: #444; font-family: 'Inter', sans-serif; font-size: 10px; }
+.support-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.support-grid .support-counsellor { text-align: left; }
+.support-counsellor-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.support-counsellor-heading > span { min-width: 0; }
+.support-counsellor-icon { width: 38px; height: 38px; flex: 0 0 38px; object-fit: contain; border-radius: 50%; background: #DCEAE4; padding: 3px; }
+.support-grid .support-category { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.support-category-icon { display: block; width: 42px; height: 42px; object-fit: contain; }
+.booking-date-picker { max-width: 420px; margin: 12px auto; padding: 12px; border: 1px solid var(--ln); border-radius: 12px; background: #fff; }
+.calendar-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--g); }
+.calendar-month-button { width: 32px; height: 30px; border-radius: 7px; background: #DCEAE4; color: var(--g); font-size: 20px; line-height: 1; }
+.calendar-month-button:disabled { opacity: .35; cursor: default; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.calendar-weekdays { margin-bottom: 4px; color: var(--mu); font-size: 10px; }
+.calendar-day { width: 100%; aspect-ratio: 1; border-radius: 7px; background: #f1f5f2; color: var(--tx); font-size: 12px; }
+.calendar-day:hover:not(:disabled), .calendar-day.selected { background: var(--g); color: #fff; }
+.calendar-day:disabled { background: transparent; color: #b7c0bc; cursor: not-allowed; }
+.calendar-empty { aspect-ratio: 1; }
+.calendar-selected-date { min-height: 18px; text-align: center; }
+.calendar-time-label { margin: 10px 0 6px; font-size: 12px; font-weight: 600; color: var(--g); text-align: center; }
+.calendar-times { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.calendar-time { min-width: 54px; padding: 5px 8px; border: 1px solid var(--ln); border-radius: 7px; background: #fff; color: var(--tx); font-size: 11px; }
+.calendar-time:hover:not(:disabled), .calendar-time.selected { border-color: var(--g); background: #DCEAE4; }
+.calendar-time:disabled { opacity: .4; cursor: not-allowed; }
+@media (min-width: 760px) {
+  .hub-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hub-grid .opt { margin-bottom: 0; }
+  .support-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .support-grid .opt { margin-bottom: 0; min-height: 100px; height: auto; padding: 10px 12px; font-size: 12px; }
+  .support-grid .opt small { font-size: 9px; }
+  .support-grid .opt b { font-size: 13px; }
+  .btn.support-action {
+    display: block;
+    width: 100%;
+    margin: 12px auto 0;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+}
+.h-heading{
+  font-family: Gloock, serif;
+  font-size: 26px;
+
+  
+}
+@media (max-width: 600px) {
+  .opt { height: auto; min-height: 116px; padding: 10px 12px; }
+}
+.hero { background: none; color: #1a1a1a; border-radius: 14px; padding: 16px; margin-bottom: 12px }   /* green welcome banner at the top of Home and Profile (their text colours are already set for a dark green background) */
+.prof-me{ background:#3f8f84; width: 50px; height: 50px; border-radius: 14px; padding: 16px; margin-bottom: 12px }
+.profile-call-button { display: flex; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; }
+.profile-call-icon { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; background: var(--g2); }
+.profile-call-icon img { display: block; width: 21px; height: 21px; object-fit: contain; filter: brightness(0) invert(1); }
+.opt small { display: block; color: var(--mu); margin-top: 2px }
+
+/* ---------- 7. LOGIN PAGE ---------- */
+.inst-banner { background: var(--g); color: #fff; border-radius: 14px; padding: 14px; margin-bottom: 12px }   /* green "Download the app" box */
+.inst-title { font-size: 16px }                              /* its heading */
+.inst-text { color: #cfe3df; margin: 4px 0 8px }             /* its description */
+.inst-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 16px; text-align: center }
+.inst-button { width: 84px; height: 84px; border: 0; border-radius: 18px; background: #fff; display: grid; place-items: center; box-shadow: 0 8px 18px rgba(0,0,0,.12); padding: 0; cursor: pointer }
+.inst-icon { width: 56px; height: 56px; object-fit: contain; display: block }
+.inst-label { color: var(--g); font-size: 14px; font-weight: 700 }
+.role-tabs { display: flex; gap: 10px; margin-bottom: 12px } /* the Student | Counsellor | Admin row */
+.role-tab { flex: 1; padding: 10px; background: #8aa5a0 }    /* each tab (grey = not selected); flex:1 = equal widths */
+.role-tab.on { background: var(--g) }                        /* the selected tab (dark green) */
+.link-btn { background: none; color: var(--t); font-size: 13px; padding: 8px 12px 8px 0; text-decoration: underline }  /* text links like "Forgot password?" */
+.page-note { margin-bottom: 10px }                           /* grey text under the page heading */
+.field-hint { margin: -4px 0 8px }                           /* hint under the password box */
+.demo-note { margin-top: 8px }                               /* demo logins note (staff tabs) */
+.brand { color: var(--t) }                                   /* the word "CareConnect" in the student heading. Style it freely */
+.reset-demo { margin-top: 16px }                             /* "Reset demo data" line */
+.reset-demo a { color: var(--t) }
+
+/* ---------- 8. POPUPS + TOAST ---------- */
+.modal { position: fixed; inset: 0; background: rgba(10,30,26,.6); display: none; z-index: 9; align-items: center; justify-content: center; padding: 20px }   /* dark backdrop covering the app; hidden until class "on" */
+.modal.on { display: flex }                 /* shows the popup */
+.modal .card { margin: 0 auto; background:#fff; border-radius:16px; padding:24px; width: min(100%, 360px); max-width: 360px; max-height: calc(100vh - 40px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; text-align:center; box-sizing: border-box }     /* the white popup box stays centered on larger screens */
+.checkin-questionnaire { font-family: 'Inter', sans-serif; }
+.checkin-question { margin-top: 16px; }
+.checkin-question + .checkin-question { padding-top: 12px; border-top: 1px solid var(--ln); }
+.checkin-answers { display: flex; gap: 6px; margin-top: 7px; }
+.toast { position: fixed; left: 14px; right: 14px; bottom: 76px; background: var(--g); color: #fff; border-radius: 10px; padding: 10px 12px; font-size: 12px; display: none; z-index: 10 }  /* small green message bar */
+.codes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-family: ui-monospace, monospace; font-size: 13px; margin: 10px 0 }   /* recovery codes: 2 columns */
+.code-chip { background: #e8f3f1; border-radius: 8px; padding: 7px; text-align: center }   /* one code */
+.temp-pw { font-family: ui-monospace, monospace; font-size: 18px; text-align: center; background: #e8f3f1; border-radius: 10px; padding: 12px; margin: 10px 0 }   /* temporary password box */
+.sos-head { background: var(--r); color: #fff; margin: -14px -14px 12px; padding: 12px 14px; border-radius: 14px 14px 0 0 }   /* red banner on top of the Crisis Line popup (negative margins cancel the card padding) */
+.sos-head b { font-size: 15px }
+.sos-call { display: block; text-align: center; text-decoration: none }   /* the "Call ... now" button */
+.sos-notice { background: #fbeeea; border-radius: 10px; padding: 10px; margin-top: 8px }   /* "number will appear here" notice */
+.sos-foot { margin: 10px 0 }
+
+/* ---------- 9. BOTTOM TABS (students) + SIDE MENU (counsellors) ---------- */
+.nav { display: flex; border-top: 1px solid var(--ln); background: #fff; position: fixed; left: 0; bottom: 0; width: 100%; z-index: 8; box-shadow: 0 -2px 10px rgba(0,0,0,.05); }
+.nav button { flex: 1; padding: 9px 0 12px; background: none; font-size: 11px; color: var(--mu) }   /* each tab */
+.nav button.on { color: var(--g); font-weight: 700 }   /* the current tab */
+.nav span { display: block; font-size: 19px }          /* the emoji icon above the label */
+.student-back { width: 40px; height: 34px; background: none; }
+.student-back[hidden] { display: none; }
+.drawer { position: fixed; inset: 0; display: none; z-index: 5 }   /* side-menu layer, hidden until "on" */
+.drawer.on { display: flex }
+.drawer nav { width: 62%; background: var(--g); color: #fff; padding: 20px 16px }   /* the green menu panel (62% of the width) */
+.drawer-title { color: #fff; font-size: 16px; margin-bottom: 10px }                  /* "Counsellor menu" */
+.drawer nav button { display: block; background: none; color: #fff; padding: 13px 4px; font-size: 14px; text-align: left; width: 100% }   /* each menu item */
+.drawer i { flex: 1; background: rgba(0,0,0,.4) }      /* dark area; tapping it closes the menu */
+
+/* ---------- 10. OTHER COMPONENTS (used by other pages) ---------- */
+.breathe { width: 100px; height: 100px; border-radius: 50%; background: var(--t); margin: 18px auto; display: grid; place-items: center; color: #fff; font-size: 14px; transition: transform 4s ease-in-out }   /* breathing-exercise circle */
+@media (prefers-reduced-motion: reduce) { .breathe { transition: none } }   /* no animation for people who turn motion off */
+.cal { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; text-align: center; font-size: 11px }   /* calendar: 7 columns */
+.cal div { padding: 8px 0; border-radius: 8px; background: #e8f3f1 }
+.cal .b { background: var(--t); color: #fff }   /* booked day */
+.cal .f { background: #ddd; color: #999 }       /* full day */
+.cal .h { background: none; color: var(--mu) }  /* heading cell */
+canvas { background: #0e2b26; border-radius: 10px; width: 100%; image-rendering: pixelated }   /* the mini-game board */
+.seg { display: none }   /* old segmented control: hidden. Delete if no page uses it */
+
+/* ---------- 11. Index----------
+  This is for the landing page*/
+.front-btn { width: 100%; padding: clamp(18px,3vw,23px); background: #2a6b62; color: #fff; font-family: 'Inter', sans-serif; font-size: clamp(16px,7vw,18px); font-weight: 900; border: none; border-radius: 999px; cursor: pointer; margin-bottom: clamp(16px,5vw,24px); letter-spacing: .01em; touch-action: manipulation; align-self: center }
+.front-btn:hover { background: #3f8f84 }
+.logo { width: 120px; height: 120px; border-radius: 60%; object-fit: cover }
+.wordmark_name { font-size: 30px; font-weight: 700; color: #1a1a1a; letter-spacing: -.3px; margin-bottom: 4px }
+.wordmark_sub { font-size: 13.5px; color:  #2b4e49; font-weight: 400; margin-bottom: 36px }
+.headline { font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.3; margin-bottom: 10px; letter-spacing: -.2px }
+.bottom_word { font-size: 11.5px; color:  #2b4e49; font-weight: 400; margin-bottom: 36px }
+.pillars { font-size: clamp(11px,3.2vw,14px); color: #2b4e49; margin-bottom: clamp(28px,8vw,48px); letter-spacing: .01em }
+.blob { position: fixed; z-index: -1; border-radius: 50% 60% 40% 70% / 60% 40% 70% 50%; }
+.blob--teal { position: fixed; width: 350px; height: 350px; background: #e8cbb8; top: -100px; right: -100px; border-radius: 50%; filter: blur(70px) }
+.blob--peach { position: fixed; width: 320px; height: 320px; background: #8a9e9b; bottom: 2%; left: -130px; border-radius: 50%; filter: blur(70px) }
+.landing { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 100vh }   /* full-screen centred block of index.html. (Renamed from .hero so it no longer stretches the small banners on Home and Profile) */
+.logo, .landing h1, .landing p, .landing a { position: relative; z-index: 1 }

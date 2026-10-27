@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNILUS CareConnect · Calendar</title>
+<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script>
+// Calendar: month grid (frozen slots show grey during an emergency) and Google Calendar sync.
+ function view(){const d=['M','T','W','T','F','S','S'].map(x=>`<div class="h">${x}</div>`).join('');let c='';for(let i=1;i<=30;i++){const k=S.frozen?'f':(i%7==3||i%9==0)?'b':'';c+=`<div class="${k}">${i}</div>`}
+ return `<h2>Calendar & Google sync</h2><div class="card"><div class="cal">${d}${c}</div><div class="small" style="margin-top:8px">${S.frozen?'All upcoming slots are locked.':'Dark = booked, light = open.'}</div></div><div class="card"><h3>Google Calendar</h3><div class="small">Syncing availability with m.lungu@unilus.edu.zm</div><button class="btn" data-a="sync">Sync now</button></div>`}
+function act(a){if(a==='sync')toast('Google Calendar synced.')}
+CC.mount({role:'c',title:'Calendar & Google sync',root:'../../',view,act});
+</script></body></html>

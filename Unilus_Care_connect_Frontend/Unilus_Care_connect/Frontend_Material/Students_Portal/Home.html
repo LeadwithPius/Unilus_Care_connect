@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNILUS CareConnect · Home</title>
+<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gloock&display=swap" rel="stylesheet">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script src="../../Frontend_Material/Shared/wellbeing_checkin.js"></script>
+<script>
+// Home: welcome card and shortcuts.
+function view(){const hour=new Date().getHours();const greeting=hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';return `<div class="home-heading"><h2 class="home-greeting" style="font-family:'Gloock', serif; font-size: 28px">${greeting}</h2><div class="home-checkin-hero"><img src="home wellness check.png" alt="Wellness Check-in" class="wellness-img"><button class="well-btn" data-a="checkin">Take a check-in <span aria-hidden="true">→</span></button></div></div>
+<div class="quick-access-title">Quick Access</div>
+ <div class="quick-access-grid">
+ <div class="card-learn"><h3 class="quick-access-card-title"><img src="Vector_Images___Browse_156_929_409_Stock_Photos__Vectors__and_Video-removebg-preview.png" alt="" class="quick-access-icon">Need a moment?</h3><div class="small">Read, watch, play.</div><button class="btn o" data-a="learn">Open wellness toolkit</button></div>
+ <div class="card-support"><h3 class="quick-access-card-title"><img src="Vector_Chat_Icon__Chat_Icons__Comment_Icon__Typing_Icon_PNG_and_Vector_with_Transparent_Background_for_Free_Download-removebg-preview.png" alt="" class="quick-access-icon">Talk to a counsellor</h3><div class="small">Face-to-face on campus, or call/chat with a short reason.</div><button class="btn o" data-a="support">Book appointment</button></div>
+ </div>`}
+function act(a){if(a==='checkin')checkin();else go(a)}
+CC.mount({role:'s',title:'Home',nav:'home',root:'../../',view,act});
+</script></body></html>

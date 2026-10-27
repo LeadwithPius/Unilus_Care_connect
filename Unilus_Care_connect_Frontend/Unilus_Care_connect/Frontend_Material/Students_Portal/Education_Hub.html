@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNILUS CareConnect · Education hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Gloock&display=swap" rel="stylesheet">
+<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<div class="logo">
+    <img src="Careconnect_logo-removebg-preview.png" alt="CareConnect-Logo" class="app-logo" style="margin:0px;" >
+</div>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script src="../../Frontend_Material/Shared/wellness_tools.js"></script>
+<script>
+// Education Hub: the first screen a student sees after logging in.
+function view(){return `<h2 style="font-family:'Gloock', sans-serif; letter-spacing:0.07em; margin-bottom:5px; margin-top:-30px; font-size:28px;">Education hub</h2><div class="small" style="margin-bottom:18px;">Learn at your own pace.</div>
+ <h3 style="margin-top:0; margin-bottom:15px; letter-spacing:0.08em; font-family:'Gloock', sans-serif;">Learning tools</h3>
+ <div class="hub-grid">`+Object.keys(TOPICS).map(k=>`<button class="opt hub-button hub-${k.toLowerCase().replace(/[^a-z0-9]+/g,'-')} learning-tool" data-topic="${k}" style="margin-bottom:14px; font-family:'Inter', sans-serif;"><img src="Cover-learning-icon.png" alt=""><span class="learning-tool-copy"><span class="hub-button-title">${k}</span><small style="color:#444; font-family:'Inter', sans-serif; font-size:10px;">Tap to read</small></span></button>`).join('')+`<button class="opt hub-button hub-videos learning-tool" data-a="videos" style="margin-bottom:14px; font-family:'Inter', sans-serif;"><img src="video-play-icon.png" alt=""><span class="learning-tool-copy"><span class="hub-button-title">Video tutorials</span><small style="color:#444; font-family:'Inter', sans-serif; font-size:10px;">Short visual lessons</small></span></button></div>
+ <h3 style="margin-top:22px; margin-bottom:15px; letter-spacing:0.05em; font-family:'Gloock', sans-serif;">Wellness toolkit</h3>
+ <div class="hub-grid">
+ <button class="opt hub-button hub-breathe" data-a="breathe"><span class="hub-button-title">🫁 Breathe</span><small>Guided breathing for focus and calm</small></button>
+ <button class="opt hub-button hub-finch" data-a="finch"><span class="hub-button-title">🐣 Finch</span><small>Look after your pet by looking after yourself</small></button>
+ <button class="opt hub-button hub-snake" data-a="snake"><span class="hub-button-title">🐍 Snake Xenzia</span><small>Retro grounding game to interrupt panic loops</small></button>
+ </div>`}
+function videos(){modal(`<h3>Video tutorials</h3><p class="small">Videos are coming soon and will be loaded from the backend API.</p><div class="card" style="margin-top:10px;border-style:dashed"><div class="small">Coming soon:</div><div class="row"><span>Box breathing</span><span class="small">API</span></div><div class="row"><span>Grounding when panicking</span><span class="small">API</span></div><div class="row"><span>Sleep and exam stress</span><span class="small">API</span></div></div><button class="btn" onclick="close_()">Close</button>`)}
+function act(a){({breathe,finch,snake,videos})[a]()}
+function after(){document.querySelectorAll('[data-topic]').forEach(b=>b.onclick=()=>modal(`<h3>${b.dataset.topic}</h3><p class="small">${TOPICS[b.dataset.topic]}</p><button class="btn" onclick="close_()">Close</button>`))}
+CC.mount({role:'s',title:'Education hub',nav:'learn',root:'../../',view,act,after});
+</script></body></html>

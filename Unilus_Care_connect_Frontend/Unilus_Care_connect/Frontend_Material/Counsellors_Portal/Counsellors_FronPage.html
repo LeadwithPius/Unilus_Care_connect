@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNILUS CareConnect · Counsellor dashboard</title>
+<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+</head><body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+<div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/core.js"></script>
+<script src="../../Frontend_Material/Shared/care_data.js"></script>
+<script src="../../Frontend_Material/Shared/emergency_hotline.js"></script>
+<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<script>
+// Counsellor dashboard: availability, emergency control, priority triage queue, attendance log.
+ function view(){const ownCounsellor=counsellorBookingIndex(),ownStatus=ownCounsellor>=0?cstat(ownCounsellor):null;return `<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><h2 style="margin:0">Welcome back, ${S.name}</h2></div>
+ <div class="card"><h3>Your availability</h3><div class="small">Students see this when choosing you.</div>${ownStatus?`<div style="margin:8px 0"><span class="pill" style="background:${ownStatus[1]}">${ownStatus[0]}</span> <span class="small">${ownStatus[2]}</span></div><button class="btn o" data-a="avail">${S.counsellorAvailability[CNS[ownCounsellor].n]==='AWAY'?'Set me as available':'Set me as away'}</button>`:'<div class="small" style="margin-top:8px">No student booking profile is linked to this account.</div>'}</div><div class="stats"><div>APPOINTMENTS<b style="color:var(--g)">${S.booked?9:8}</b></div><div>WAITING QUEUE<b style="color:var(--o)">4</b></div><div>ACTIVE CRISIS<b style="color:var(--r)">${S.crisis}</b></div></div>
+ <div class="card" style="background:#fbeeea;border-color:#e8c4b9"><h3 style="color:var(--r)">⚠ Emergency schedule control</h3><div class="small">${S.frozen?'Slots are frozen. Affected students were sent rebooking alerts.':'Freeze upcoming slots instantly and send auto-rebooking alerts.'}</div><button class="btn r" data-a="freeze">${S.frozen?'Resume schedule':'Trigger emergency mode'}</button></div>
+ <div class="card"><h3>Priority triage queue</h3>
+ <div class="row"><div><b>09:00 · Student #C09</b><div class="small" style="color:var(--r)">High / Crisis (Face-to-Face)</div></div><button class="pill" data-a="respond">Respond</button></div>
+ <div class="row"><div><b>10:00 · Student #B17</b><div class="small" style="color:var(--o)">Psycho-social (Face-to-Face)</div></div><button class="pill" data-a="notes">View</button></div>
+ ${S.booked?`<div class="row"><div><b>${S.slot} · Student #N22</b><div class="small">${S.cat} (${S.mode})</div>${S.bookingStatus==='pending'?'<div class="small" style="color:var(--o)">Awaiting your approval</div>':''}${S.mode!=='Face-to-Face'&&S.why?`<div class="small">Reason: ${S.why}</div>`:''}${S.transfers>=3?`<div class="small" style="color:var(--r)">Continuity flag: moved ${S.transfers} times</div>`:''}</div>${S.bookingStatus==='pending'?'<div><button class="pill" style="background:var(--g);margin:3px" data-a="approve">Approve</button><button class="pill" style="background:var(--r);margin:3px" data-a="deny">Decline</button></div>':'<button class="pill" style="background:var(--o)" data-a="noshow">Mark no-show</button>'}</div>`:''}</div>
+ ${S.noshow.length?`<div class="card"><h3>Attendance log</h3>${S.noshow.map(n=>`<div class="small">${n}: No-show (grace period of 15 min passed)</div>`).join('')}</div>`:''}`}
+function act(a){
+ if(a==='avail'){const i=counsellorBookingIndex();if(i<0)return toast('No student booking profile is linked to this account.');const n=CNS[i].n;S.counsellorAvailability[n]=S.counsellorAvailability[n]==='AWAY'?'AVAILABLE':'AWAY';toast(S.counsellorAvailability[n]==='AWAY'?'You are shown as away to students.':'You are shown as available to students.');render()}
+ else if(a==='freeze'){S.frozen=!S.frozen;if(S.frozen&&S.booked)S.transfers++;toast(S.frozen?'Emergency mode on. Rebooking alerts sent.':'Schedule resumed.');render()}
+ else if(a==='approve'){if(!S.booked||S.bookingStatus!=='pending')return;S.bookingStatus='approved';toast('Request approved. The student can now arrange a time.');render()}
+ else if(a==='deny'){if(!S.booked||S.bookingStatus!=='pending')return;S.booked=false;S.bookingStatus='denied';S.why='';S.appointmentDate=S.appointmentTime='';toast('Request declined.');render()}
+ else if(a==='noshow'){S.noshow.push(S.slot+' #N22');S.booked=false;S.bookingStatus='';S.why='';S.appointmentDate=S.appointmentTime='';toast('Logged as no-show.');render()}
+ else if(a==='respond'){S.crisis=Math.max(0,S.crisis-1);toast('Crisis case #C09 opened.');render()}
+ else if(a==='notes')modal(`<h3>Student #B17</h3><p class="small">Framework: CBT. Phase 2. Last session: sleep and exam worry. Notes are encrypted.</p><button class="btn" onclick="close_()">Close</button>`);
+}
+CC.mount({role:'c',title:'Counsellor dashboard',root:'../../',view,act});
+</script></body></html>
