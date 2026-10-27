@@ -52,7 +52,17 @@ public class TriageWellbeingService {
                 : "SELF_HELP_OR_COUNSELLOR_BOOKING";
 
         Map<String, Object> answers = new LinkedHashMap<>();
-        if (request.responses() != null) answers.putAll(request.responses());
+        if (request.responses() != null) {
+            if (request.responses().size() > 20) {
+                throw new IllegalArgumentException("Too many additional triage responses.");
+            }
+            request.responses().forEach((key, value) -> {
+                if (key == null || key.length() > 60 || (value instanceof String s && s.length() > 500)) {
+                    throw new IllegalArgumentException("A triage response exceeds the allowed size.");
+                }
+            });
+            answers.putAll(request.responses());
+        }
         answers.put("impactLevel", request.impactLevel());
         answers.put("immediateDanger", request.immediateDanger());
         String json = toJson(answers);
@@ -183,7 +193,7 @@ public class TriageWellbeingService {
         return checkInsForStudent(studentId(email));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Map<String, Object>> counsellorCheckIns(String email, UUID studentProfileId) {
         UUID counsellorId;
         try {
