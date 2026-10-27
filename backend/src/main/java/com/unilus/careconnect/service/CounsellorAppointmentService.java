@@ -78,6 +78,7 @@ public class CounsellorAppointmentService {
             """, target, appointmentId, counsellorId);
         if (updated != 1) throw new IllegalStateException("Appointment status changed; refresh and try again.");
 
+        audit(email, "APPOINTMENT_" + target, appointmentId);
         if ("CONFIRMED".equals(target)) {
             jdbc.update("""
                 INSERT INTO wellness.counselling_sessions
@@ -141,7 +142,16 @@ public class CounsellorAppointmentService {
         } else {
             throw new IllegalArgumentException("Action must be CHECK_IN, COMPLETE, or NO_SHOW.");
         }
+        audit(email, "APPOINTMENT_" + target, appointmentId);
         return appointmentSummary(appointmentId, counsellorId);
+    }
+
+    private void audit(String email, String eventType, UUID appointmentId) {
+        jdbc.update("""
+            INSERT INTO credentials.audit_events (user_id, event_type, outcome, entity_type, entity_id)
+            SELECT id, ?, 'SUCCESS', 'appointment', ?
+            FROM credentials.users WHERE lower(email) = lower(?)
+            """, eventType, appointmentId, email);
     }
 
     private UUID counsellorId(String email) {
