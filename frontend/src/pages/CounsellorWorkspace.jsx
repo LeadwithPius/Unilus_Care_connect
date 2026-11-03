@@ -130,8 +130,8 @@ export default function CounsellorWorkspace() {
 
   const pendingCount = appointments.filter(item => item.status === 'REQUESTED').length
   const activeCount = appointments.filter(item => ['CONFIRMED', 'CHECKED_IN'].includes(item.status)).length
-  const upcomingSlots = availability.filter(slot => new Date(slot.startsAt).getTime() > loadedAt)
-    .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
+  const upcomingSlots = availability.filter(slot => Date.parse(slot.startsAt) > loadedAt)
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
 
   async function handleDecision(id, decision) {
     setBusyId(id)
