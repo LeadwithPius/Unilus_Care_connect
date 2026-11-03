@@ -68,6 +68,30 @@ public class AdminController {
         ));
     }
 
+    @GetMapping("/appointments")
+    public ResponseEntity<?> listAppointments() {
+        return ResponseEntity.ok(jdbcTemplate.queryForList("""
+                SELECT
+                    ap.id AS "appointmentId",
+                    ap.status,
+                    ap.counselling_mode AS "counsellingMode",
+                    ap.created_at AS "createdAt",
+                    av.starts_at AS "scheduledStart",
+                    av.ends_at AS "scheduledEnd",
+                    cp.display_name AS "counsellorName",
+                    sc.display_name AS "supportCategory"
+                FROM wellness.appointments ap
+                JOIN wellness.availability_slots av
+                  ON av.id = ap.availability_slot_id
+                JOIN credentials.counsellor_profiles cp
+                  ON cp.id = av.counsellor_profile_id
+                JOIN wellness.support_categories sc
+                  ON sc.id = ap.support_category_id
+                ORDER BY av.starts_at DESC
+                LIMIT 250
+                """));
+    }
+
     @GetMapping("/students")
     public ResponseEntity<?> listStudents() {
         return ResponseEntity.ok(jdbcTemplate.queryForList("""
