@@ -3,6 +3,7 @@ package com.unilus.careconnect.service;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -96,6 +97,37 @@ public class ConsentService {
         return documents.stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                         "No consent document has been published for this purpose."));
+    }
+
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getCurrentStatus(String email, String purposeCode) {
+        ConsentDocument document = getCurrentDocument(purposeCode);
+
+        UUID studentProfileId;
+        try {
+            studentProfileId = jdbcTemplate.queryForObject("""
+                    SELECT sil.student_profile_id
+                    FROM credentials.users u
+                    JOIN credentials.student_identity_links sil ON sil.user_id = u.id
+                    WHERE lower(u.email) = lower(?)
+                    """, UUID.class, email);
+        } catch (EmptyResultDataAccessException e) {
+            throw new IllegalArgumentException("No student profile is linked to this account.");
+        }
+
+        Boolean accepted = jdbcTemplate.queryForObject("""
+                SELECT COALESCE((
+                    SELECT decision
+                    FROM wellness.consent_events
+                    WHERE student_profile_id = ?
+                      AND consent_document_id = ?
+                    ORDER BY id DESC
+                    LIMIT 1
+                ), '') = 'GRANTED'
+                """, Boolean.class, studentProfileId, document.getId());
+
+        return Map.of("document", document, "accepted", Boolean.TRUE.equals(accepted));
     }
 
     @Transactional
