@@ -14,6 +14,7 @@
 <script src="../../Frontend_Material/Shared/emergency_session.js"></script>
 <script src="../../Frontend_Material/Shared/password_tools.js"></script>
 <script>
+    document.body.classList.add('care-workspace','care-counsellor-workspace');
 // Calendar: show this counsellor's student bookings only.
 function view(){
  const ownCounsellor=counsellorBookingIndex(),ownName=ownCounsellor>=0?CNS[ownCounsellor].n:'';
