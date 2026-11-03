@@ -40,6 +40,26 @@ public class ConsentController {
         }
     }
 
+
+    @GetMapping("/status")
+    public ResponseEntity<?> getCurrentStatus(
+            Authentication authentication,
+            @RequestParam(defaultValue = "COUNSELLING") String purposeCode) {
+        try {
+            Map<String, Object> status = consentService.getCurrentStatus(
+                    authentication.getName(), purposeCode);
+            ConsentDocument document = (ConsentDocument) status.get("document");
+            return ResponseEntity.ok(Map.of(
+                    "document", ResponseMapper.consentDocument(document),
+                    "accepted", status.get("accepted")));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping
     public ResponseEntity<?> recordDecision(
             Authentication authentication,
