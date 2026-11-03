@@ -39,7 +39,8 @@ public class AppointmentController {
                     request.getAvailabilitySlotId(),
                     request.getSupportCategoryCode(),
                     request.getCounsellingMode(),
-                    request.getAlternativeModeReason()
+                    request.getAlternativeModeReason(),
+                    request.getConsentDocumentId()
             );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(
