@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   CalendarDays,
-  CheckCircle2,
   Clock3,
   HeartHandshake,
   House,
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
   UserRound,
   Video,
-  XCircle,
 } from 'lucide-react'
 import { api } from '../services/api'
 
@@ -51,7 +49,7 @@ function LoadingState({ label = 'Loading your CareConnect information…' }) {
   return <div className="journey-loading"><LoaderCircle className="journey-spin" size={20} />{label}</div>
 }
 
-function AppointmentCard({ appointment, onCancel, cancellingId }) {
+function AppointmentCard({ appointment, onCancel, cancellingId, showCancel = true }) {
   const canCancel = ['REQUESTED', 'CONFIRMED'].includes(String(appointment.status).toUpperCase())
   return <article className="journey-appointment-card">
     <div className="journey-appointment-top">
@@ -64,7 +62,7 @@ function AppointmentCard({ appointment, onCancel, cancellingId }) {
       <span>{String(appointment.counsellingMode || 'FACE_TO_FACE').replaceAll('_', ' ')}</span>
       {appointment.supportCategory && <span>{appointment.supportCategory}</span>}
     </div>
-    {canCancel && <button className="journey-text-button journey-cancel-button" type="button" disabled={cancellingId === appointment.id} onClick={() => onCancel(appointment.id)}>
+    {showCancel && canCancel && <button className="journey-text-button journey-cancel-button" type="button" disabled={cancellingId === appointment.id} onClick={() => onCancel(appointment.id)}>
       {cancellingId === appointment.id ? 'Cancelling…' : 'Cancel appointment'}
     </button>}
   </article>
@@ -366,7 +364,7 @@ export function Me() {
       <section className="journey-section">
         <div className="journey-section-heading"><div><span className="learn-section-eyebrow">YOUR HISTORY</span><h2>Appointments</h2></div><span className="journey-count">{appointments.length} total</span></div>
         {appointments.length ? <div className="journey-appointment-grid">
-          {[...appointments].sort((a, b) => new Date(b.scheduledStart) - new Date(a.scheduledStart)).map(item => <AppointmentCard key={item.id} appointment={item} onCancel={() => {}} />)}
+          {[...appointments].sort((a, b) => new Date(b.scheduledStart) - new Date(a.scheduledStart)).map(item => <AppointmentCard key={item.id} appointment={item} showCancel={false} />)}
         </div> : <div className="journey-empty"><CalendarDays size={24} /><h3>No appointment history yet</h3><p>Your counselling appointments will appear here.</p><Link to="/support">Explore support <ArrowRight size={16} /></Link></div>}
       </section>
       <section className="journey-reassurance">
