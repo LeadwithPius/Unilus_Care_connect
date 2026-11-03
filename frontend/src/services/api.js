@@ -287,6 +287,10 @@ export const api = {
     return request('GET', '/counsellor/profile')
   },
 
+  updateCounsellorProfile(details) {
+    return request('PUT', '/counsellor/profile', details)
+  },
+
   setAcceptingAppointments(acceptingAppointments) {
     return request('PATCH', '/counsellor/profile/accepting-appointments', {
       acceptingAppointments,
