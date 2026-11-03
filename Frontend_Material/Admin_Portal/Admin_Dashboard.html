@@ -49,7 +49,7 @@
         toast('Enter the counsellor name, email and temporary password.');
         return;
       }
-      if (!/^[^@\\s]+@(?:[a-z0-9-]+\\.)*unilus\\.ac\\.zm$/i.test(email)) {
+      if (!/^[^@\s]+@(?:[a-z0-9-]+\.)*unilus\.ac\.zm$/i.test(email)) {
         toast('Use a valid UNILUS email address.');
         return;
       }
