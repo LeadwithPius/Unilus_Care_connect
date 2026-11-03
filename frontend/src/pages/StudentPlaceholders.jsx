@@ -218,7 +218,7 @@ export function Home() {
                     >{value}</button>
                   ))}
                 </div>
-                <small>Choose a number from 1 (low) to 5 (high).</small>
+                <small>Choose the number that best reflects your experience.</small>
               </fieldset>
             ))}
             <Message>{checkInError}</Message>
