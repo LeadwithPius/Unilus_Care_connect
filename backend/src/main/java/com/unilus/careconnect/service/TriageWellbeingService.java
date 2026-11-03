@@ -336,10 +336,9 @@ public class TriageWellbeingService {
     @Transactional
     public List<Map<String, Object>> counsellorCheckIns(
             String email,
-            UUID studentProfileId) {
+            UUID appointmentId) {
 
         UUID counsellorId;
-
         try {
             counsellorId = jdbc.queryForObject("""
                 SELECT cp.id
@@ -347,43 +346,32 @@ public class TriageWellbeingService {
                 JOIN credentials.users u ON u.id = cp.user_id
                 WHERE lower(u.email) = lower(?)
                   AND u.enabled = TRUE
-                """,
-                UUID.class,
-                email);
-
+                """, UUID.class, email);
         } catch (EmptyResultDataAccessException e) {
-            throw new IllegalStateException(
-                    "Counsellor profile not found.");
+            throw new IllegalStateException("Counsellor profile not found.");
         }
 
-        Integer authorized = jdbc.queryForObject("""
-            SELECT COUNT(*)
-            FROM wellness.counselling_sessions
-            WHERE student_profile_id = ?
-              AND counsellor_profile_id = ?
-              AND session_status IN ('IN_PROGRESS', 'COMPLETED')
-            """,
-            Integer.class,
-            studentProfileId,
-            counsellorId);
-
-        if (authorized == null || authorized == 0) {
-            audit(
-                    email,
-                    "WELLBEING_ACCESS_DENIED",
-                    "student_profile",
-                    studentProfileId);
-
+        UUID studentProfileId;
+        try {
+            studentProfileId = jdbc.queryForObject("""
+                SELECT a.student_profile_id
+                FROM wellness.appointments a
+                JOIN wellness.availability_slots av
+                  ON av.id = a.availability_slot_id
+                JOIN wellness.counselling_sessions cs
+                  ON cs.appointment_id = a.id
+                WHERE a.id = ?
+                  AND av.counsellor_profile_id = ?
+                  AND cs.counsellor_profile_id = ?
+                  AND cs.session_status IN ('IN_PROGRESS', 'COMPLETED')
+                """, UUID.class, appointmentId, counsellorId, counsellorId);
+        } catch (EmptyResultDataAccessException e) {
+            audit(email, "WELLBEING_ACCESS_DENIED", "appointment", appointmentId);
             throw new SecurityException(
-                    "You are not authorized to view this student's wellbeing history.");
+                    "You are not authorized to view wellbeing history for this appointment.");
         }
 
-        audit(
-                email,
-                "WELLBEING_HISTORY_VIEWED",
-                "student_profile",
-                studentProfileId);
-
+        audit(email, "WELLBEING_HISTORY_VIEWED", "appointment", appointmentId);
         return checkInsForStudent(studentProfileId);
     }
 
