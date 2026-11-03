@@ -85,7 +85,7 @@ public class CounsellorAvailabilityService {
                                 'COMPLETED', 'NO_SHOW'
                             )
                       )
-                    ORDER BY starts_at
+                    ORDER BY av.starts_at
                     """;
         } else {
             sql = """
