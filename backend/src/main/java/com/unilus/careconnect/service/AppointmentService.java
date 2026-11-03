@@ -35,7 +35,8 @@ public class AppointmentService {
             UUID availabilitySlotId,
             String supportCategoryCode,
             String counsellingMode,
-            String alternativeModeReason) {
+            String alternativeModeReason,
+            UUID consentDocumentId) {
 
         if (availabilitySlotId == null) {
             throw new IllegalArgumentException("Availability slot is required.");
@@ -45,6 +46,7 @@ public class AppointmentService {
         }
 
         UUID studentProfileId = getStudentProfileId(email);
+        requireCurrentCounsellingConsent(studentProfileId, consentDocumentId);
 
         var slotQuery = jdbcTemplate.queryForList("""
                 SELECT starts_at, ends_at, status
@@ -182,6 +184,52 @@ public class AppointmentService {
         }
 
         return getAppointment(appointmentId);
+    }
+
+
+    private void requireCurrentCounsellingConsent(UUID studentProfileId, UUID consentDocumentId) {
+        if (consentDocumentId == null) {
+            throw new IllegalArgumentException("Counselling consent is required.");
+        }
+
+        UUID currentDocumentId;
+        try {
+            currentDocumentId = jdbcTemplate.queryForObject("""
+                    SELECT id
+                    FROM wellness.consent_documents
+                    WHERE purpose_code = 'COUNSELLING'
+                    ORDER BY published_at DESC, id DESC
+                    LIMIT 1
+                    """, UUID.class);
+        } catch (EmptyResultDataAccessException exception) {
+            throw new IllegalStateException(
+                    "Counselling consent is not available yet. Please contact the CareConnect team.");
+        }
+
+        if (!currentDocumentId.equals(consentDocumentId)) {
+            throw new IllegalStateException(
+                    "The counselling consent document has changed. Review the latest version before booking.");
+        }
+
+        String latestDecision;
+        try {
+            latestDecision = jdbcTemplate.queryForObject("""
+                    SELECT decision
+                    FROM wellness.consent_events
+                    WHERE student_profile_id = ?
+                      AND consent_document_id = ?
+                    ORDER BY recorded_at DESC, id DESC
+                    LIMIT 1
+                    """, String.class, studentProfileId, consentDocumentId);
+        } catch (EmptyResultDataAccessException exception) {
+            throw new IllegalStateException(
+                    "Please review and accept the counselling consent before booking.");
+        }
+
+        if (!"GRANTED".equals(latestDecision)) {
+            throw new IllegalStateException(
+                    "Your current counselling consent is not granted. Review and accept it before booking.");
+        }
     }
 
     private UUID getStudentProfileId(String email) {
