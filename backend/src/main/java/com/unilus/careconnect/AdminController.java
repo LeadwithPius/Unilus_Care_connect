@@ -246,7 +246,9 @@ public class AdminController {
         }
     }
 
-    public record AccountStatusRequest(Boolean enabled) {}\n\n    public record AdminCounsellorEntry(
+    public record AccountStatusRequest(Boolean enabled) {}
+
+    public record AdminCounsellorEntry(
             UUID profileId,
             UUID userId,
             String email,
