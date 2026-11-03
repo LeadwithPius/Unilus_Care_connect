@@ -50,7 +50,16 @@ public class AppointmentService {
 
         var slotQuery = jdbcTemplate.queryForList("""
                 SELECT av.starts_at, av.ends_at, av.status,
-                       cp.accepting_appointments
+                       cp.accepting_appointments,
+                       EXISTS (
+                           SELECT 1
+                           FROM wellness.appointments booked
+                           WHERE booked.availability_slot_id = av.id
+                             AND booked.status IN (
+                                 'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                 'COMPLETED', 'NO_SHOW'
+                             )
+                       ) AS already_booked
                 FROM wellness.availability_slots av
                 JOIN credentials.counsellor_profiles cp
                   ON cp.id = av.counsellor_profile_id
@@ -68,6 +77,9 @@ public class AppointmentService {
         }
         if (!Boolean.TRUE.equals(slot.get("accepting_appointments"))) {
             throw new IllegalStateException("This counsellor is not accepting new appointment requests.");
+        }
+        if (Boolean.TRUE.equals(slot.get("already_booked"))) {
+            throw new IllegalStateException("This slot already has an appointment request. Please choose another time.");
         }
 
         OffsetDateTime startsAt = (OffsetDateTime) slot.get("starts_at");
