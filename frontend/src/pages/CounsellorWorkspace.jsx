@@ -125,6 +125,8 @@ export default function CounsellorWorkspace() {
     }
   }, [navigate])
 
+  // This effect fetches remote workspace data; state updates occur only after the API promises settle.
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void loadWorkspace() }, [loadWorkspace])
 
   const visibleAppointments = useMemo(() => filter === 'ALL'
