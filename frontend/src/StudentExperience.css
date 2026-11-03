@@ -386,3 +386,16 @@
   .platform-consent-modal { max-height:calc(100vh - 24px); padding:22px 18px; border-radius:17px; }
   .platform-consent-body { font-size:11px; }
 }
+
+
+/* Counsellor profile maintenance */
+.counsellor-welcome-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.counsellor-profile-edit{border:1px solid #d9e7de;background:#fff;color:#315f4d;border-radius:10px;padding:11px 14px;font:600 12px inherit;cursor:pointer}
+.counsellor-profile-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;background:#fff;border:1px solid #e3ebe4;border-radius:16px;padding:20px;margin:0 0 22px}
+.counsellor-profile-form label{display:grid;gap:6px}
+.counsellor-profile-form label span{font-size:11px;color:#71877b;font-weight:700}
+.counsellor-profile-form input,.counsellor-profile-form textarea{width:100%;border:1px solid #dce7de;border-radius:9px;padding:11px;background:#fbfdfb;color:#294d40;font:13px inherit;outline-color:#6d9e82}
+.counsellor-profile-bio{grid-column:1/-1}
+.counsellor-profile-form>button{justify-self:start;border:0;background:#245b4b;color:#fff;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}
+.counsellor-profile-form>button:disabled{opacity:.6;cursor:wait}
+@media(max-width:640px){.counsellor-profile-form{grid-template-columns:1fr}.counsellor-profile-bio{grid-column:1}}
