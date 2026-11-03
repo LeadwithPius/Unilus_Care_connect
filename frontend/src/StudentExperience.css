@@ -93,8 +93,9 @@
 .tool-modal-heading button { display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 50%; background: #eef3ef; color: var(--student-forest); }
 .tool-modal-intro, .tool-modal-note { color: var(--student-muted); font-size: 12px; line-height: 1.6; }
 .guided-breath-orb { width: 170px; height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; margin: 25px auto; border: 1px solid #8cb7a6; border-radius: 50%; background: radial-gradient(circle, #e6f1e9, #c4ded0); color: var(--student-forest); transition: transform 4s ease-in-out; }
-.guided-breath-orb.is-inhaling { transform: scale(1.15); }
-.guided-breath-orb.is-exhaling { transform: scale(.86); }
+.guided-breath-orb.is-inhaling { transform: scale(1.15); transition-duration: 4s; }
+.guided-breath-orb.is-holding { transform: scale(1.15); transition-duration: 2s; }
+.guided-breath-orb.is-exhaling { transform: scale(.86); transition-duration: 6s; }
 .guided-breath-orb strong { font: 500 22px var(--student-display); }
 .guided-breath-orb span { font-size: 12px; }
 .snake-board { width: min(100%, 300px); aspect-ratio: 1; display: grid; grid-template-columns: repeat(20, 1fr); gap: 1px; margin: 16px auto 8px; padding: 5px; border-radius: 9px; background: #163b33; }
