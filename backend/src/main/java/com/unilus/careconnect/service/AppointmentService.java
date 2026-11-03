@@ -49,9 +49,12 @@ public class AppointmentService {
         requireCurrentCounsellingConsent(studentProfileId, consentDocumentId);
 
         var slotQuery = jdbcTemplate.queryForList("""
-                SELECT starts_at, ends_at, status
-                FROM wellness.availability_slots
-                WHERE id = ?
+                SELECT av.starts_at, av.ends_at, av.status,
+                       cp.accepting_appointments
+                FROM wellness.availability_slots av
+                JOIN credentials.counsellor_profiles cp
+                  ON cp.id = av.counsellor_profile_id
+                WHERE av.id = ?
                 """, availabilitySlotId);
 
         if (slotQuery.isEmpty()) {
@@ -62,6 +65,9 @@ public class AppointmentService {
         String slotStatus = (String) slot.get("status");
         if (!"OPEN".equals(slotStatus)) {
             throw new IllegalStateException("This appointment slot is not open.");
+        }
+        if (!Boolean.TRUE.equals(slot.get("accepting_appointments"))) {
+            throw new IllegalStateException("This counsellor is not accepting new appointment requests.");
         }
 
         OffsetDateTime startsAt = (OffsetDateTime) slot.get("starts_at");
