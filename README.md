@@ -41,7 +41,7 @@ The frontend API client automatically targets `http://localhost:8080/api` when s
 - Login uses `POST /api/auth/login` and stores the returned JWT in session storage.
 - Protected portal pages validate the JWT with `GET /api/auth/me` and enforce the selected STUDENT, COUNSELLOR or ADMIN role.
 - Student registration uses `POST /api/students/register` with full name, student email, student number and password.
-- Forgot password, reset password and email verification use the existing backend endpoints. The email links resolve to `reset-password.html` and `verify-email.html`.
+- Forgot password, reset password and Email verification is currently disabled; newly registered student and administrator-created counsellor accounts are activated immediately.ng backend endpoints. The email links resolve to `reset-password.html` and `verify-email.html`.
 - Administrator counsellor creation uses `POST /api/admin/counsellors`.
 
 Student appointment workflows, counsellor scheduling/triage, emergency-session booking, education content loading and anonymised reports still need their individual screens connected to implemented backend endpoints. Some existing screens remain prototype UI and must not be treated as persisted backend records.
