@@ -175,7 +175,14 @@ public class AdminController {
                         WHERE av.counsellor_profile_id = cp.id
                           AND av.status = 'OPEN'
                           AND av.starts_at > CURRENT_TIMESTAMP
-                    ) AS open_slots
+                    ) AS open_slots,
+                    (
+                        SELECT COUNT(*)
+                        FROM wellness.appointments ap
+                        JOIN wellness.availability_slots av2
+                          ON av2.id = ap.availability_slot_id
+                        WHERE av2.counsellor_profile_id = cp.id
+                    ) AS appointment_count
                 FROM credentials.counsellor_profiles cp
                 JOIN credentials.users u ON u.id = cp.user_id
                 JOIN credentials.user_roles ur ON ur.user_id = u.id
@@ -194,7 +201,8 @@ public class AdminController {
                         rs.getBoolean("email_verified"),
                         rs.getBoolean("accepting_appointments"),
                         rs.getObject("created_at", OffsetDateTime.class),
-                        rs.getLong("open_slots")
+                        rs.getLong("open_slots"),
+                        rs.getLong("appointment_count")
                 )
         );
         return ResponseEntity.ok(counsellors);
@@ -249,6 +257,7 @@ public class AdminController {
             boolean emailVerified,
             boolean acceptingAppointments,
             OffsetDateTime createdAt,
-            long openSlots
+            long openSlots,
+            long appointmentCount
     ) {}
 }
