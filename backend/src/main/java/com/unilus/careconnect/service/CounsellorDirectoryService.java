@@ -29,7 +29,8 @@ public class CounsellorDirectoryService {
                             cp.id,
                             cp.display_name,
                             cp.professional_title,
-                            cp.biography
+                            cp.biography,
+                            cp.accepting_appointments
                         FROM credentials.counsellor_profiles cp
                         JOIN credentials.users u
                             ON u.id = cp.user_id
@@ -50,7 +51,8 @@ public class CounsellorDirectoryService {
                                         ),
                                         rs.getString(
                                                 "biography"
-                                        )
+                                        ),
+                                        rs.getBoolean("accepting_appointments")
                                 )
                 );
 
@@ -102,6 +104,7 @@ public class CounsellorDirectoryService {
         private final String fullName;
         private final String professionalTitle;
         private final String biography;
+        private final boolean acceptingAppointments;
 
         private List<AvailabilityEntry> availability;
 
@@ -109,12 +112,14 @@ public class CounsellorDirectoryService {
                 UUID profileId,
                 String fullName,
                 String professionalTitle,
-                String biography) {
+                String biography,
+                boolean acceptingAppointments) {
 
             this.profileId = profileId;
             this.fullName = fullName;
             this.professionalTitle = professionalTitle;
             this.biography = biography;
+            this.acceptingAppointments = acceptingAppointments;
         }
 
         public UUID getProfileId() {
@@ -131,6 +136,10 @@ public class CounsellorDirectoryService {
 
         public String getBiography() {
             return biography;
+        }
+
+        public boolean isAcceptingAppointments() {
+            return acceptingAppointments;
         }
 
         public List<AvailabilityEntry> getAvailability() {
