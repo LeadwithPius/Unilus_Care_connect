@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+const CURRENT_YEAR = new Date().getFullYear()
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import {
@@ -101,7 +103,7 @@ function AuthShell({ children, heading, description }) {
       </div>
 
       <footer className="auth-footer">
-        <span>© {new Date().getFullYear()} CareConnect</span>
+        <span>© {CURRENT_YEAR} CareConnect</span>
         <span>University of Lusaka</span>
       </footer>
     </main>
@@ -580,9 +582,10 @@ function VerifyEmailPage() {
 
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('Verifying your email address...')
+  const active = useRef(true)
 
   useEffect(() => {
-    let active = true
+    active.current = true
 
     async function verify() {
       if (!token) {
@@ -594,12 +597,12 @@ function VerifyEmailPage() {
       try {
         const result = await verifyEmailOnce(token)
 
-        if (active) {
+        if (active.current) {
           setStatus('success')
           setMessage(result?.message || 'Your email address has been verified.')
         }
       } catch (err) {
-        if (active) {
+        if (active.current) {
           setStatus('error')
           setMessage(err.message || 'Email verification failed.')
         }
@@ -609,7 +612,7 @@ function VerifyEmailPage() {
     verify()
 
     return () => {
-      active = false
+      active.current = false
     }
   }, [token])
 
@@ -643,9 +646,10 @@ function PortalPage({ expectedRole, title, description }) {
   const navigate = useNavigate()
   const [status, setStatus] = useState('loading')
   const [email, setEmail] = useState('')
+  const active = useRef(true)
 
   useEffect(() => {
-    let active = true
+    active.current = true
 
     async function verifySession() {
       if (!api.token) {
@@ -656,7 +660,7 @@ function PortalPage({ expectedRole, title, description }) {
       try {
         const account = await api.me()
 
-        if (!active) {
+        if (!active.current) {
           return
         }
 
@@ -685,7 +689,7 @@ function PortalPage({ expectedRole, title, description }) {
     verifySession()
 
     return () => {
-      active = false
+      active.current = false
     }
   }, [expectedRole, navigate])
 
