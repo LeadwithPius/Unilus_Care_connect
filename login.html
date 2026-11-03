@@ -47,6 +47,11 @@ function roleTabs(){                                                            
   '</div>'}                                                                     // closes the row
 
 // ===== 3. BUILDING THE SCREEN (returns HTML text) =====
+function passwordField(id, autocomplete){
+ return '<div class="password-field">'+inp(id,'','password',autocomplete)+
+  '<button class="password-toggle" type="button" data-password-toggle="'+id+'" aria-controls="'+id+'" aria-pressed="false">Show</button></div>';
+}
+
 function loginView(){                                                           // decides which of the 3 forms to show
  const sel=(id,o)=>'<select class="fld" id="'+id+'">'+o.map(x=>{const v=[].concat(x);return '<option value="'+v[0]+'">'+v[v.length-1]+'</option>'}).join('')+'</select>';   // helper that makes a dropdown. Each option is either "text" or ["value","text shown"]
  const inst=matchMedia('(display-mode: standalone)').matches?'':                // if the app is already installed on the home screen, show nothing...
@@ -70,7 +75,7 @@ function loginView(){                                                           
    '<div class="card">'+lab('Full name')+inp('lfn','Your full name','text','name')+
    lab('Student email')+lidf+
    lab('Student number')+inp('lsn','Your student number','text','off')+
-   lab('Password')+inp('lpw','','password','new-password')+
+   lab('Password')+passwordField('lpw','new-password')+
    '<div class="small field-hint">Use 12 to 72 characters, including at least one letter and one number.</div>'+
    '<button class="btn" id="lgo">Create account</button></div>'+
                 // main button
@@ -79,7 +84,7 @@ function loginView(){                                                           
   b='<h2>'+(stu?'Welcome to <span class="brand"><br>CareConnect</br></span>':S.lr==='c'?'Counsellor log in':'Administrator log in')+'</h2>'+   // heading depends on the tab. FIX: the word CareConnect now uses the .brand class (teal) from styles.css
    '<div class="small page-note">'+(stu?'Log in with your student email and password.':'Use your UNILUS email and password. Accounts are created by the administrator.')+'</div>'+   // FIX: said "student ID" but the box needs an email
    '<div class="card">'+lab(idl)+lidf+                                          // white box, email label and email box
-   lab('Password')+inp('lpw','','password','current-password')+                 // password label and box (id "lpw")
+   lab('Password')+passwordField('lpw','current-password')+                 // password label and box (id "lpw")
    '<button class="btn" id="lgo">Log in</button></div>'+                        // main button
    link('forgot','Forgot password?')+(stu?link('new','Create account'):'')+     // "Forgot password?" for everyone, "Create account" for students only
    (stu?'':'<div class="small demo-note">Staff accounts are provisioned by the CareConnect administrator. Use your registered UNILUS email.</div>');   // staff demo logins. DELETE THIS LINE before real students use the app
@@ -90,7 +95,16 @@ function loginView(){                                                           
 function bindLogin(){
  const q=(s,f)=>document.querySelectorAll(s).forEach(f);                        // shortcut: find every element matching s and run f on each
  q('[data-lr]',b=>b.onclick=()=>{S.lr=b.dataset.lr;loginHistory=['in'];S.lm='in';render()});        // role button clicked: remember the role, go back to the log in form, redraw
- q('[data-lm]',b=>b.onclick=()=>setLoginMode(b.dataset.lm));                  // link clicked: switch to that form ("in", "forgot" or "new"), redraw
+ q('[data-lm]',b=>b.onclick=()=>setLoginMode(b.dataset.lm));
+ q('[data-password-toggle]',button=>button.onclick=()=>{
+  const field=$(button.dataset.passwordToggle);
+  if(!field)return;
+  const reveal=field.type==='password';
+  field.type=reveal?'text':'password';
+  button.textContent=reveal?'Hide':'Show';
+  button.setAttribute('aria-pressed',String(reveal));
+  button.setAttribute('aria-label',reveal?'Hide password':'Show password');
+ });                  // link clicked: switch to that form ("in", "forgot" or "new"), redraw
  q('.fld',f=>f.onkeydown=e=>{if(e.key==='Enter'&&$('lgo'))doLogin()});          // pressing Enter in any box does the same as clicking the main button
  const g=$('lgo');if(g)g.onclick=doLogin;                                       // main button -> doLogin() (the "if" is there because not every screen has it)
  const i=$('inst');if(i)i.onclick=installApp}                                   // "Download app" button -> installApp() (only exists if the banner is shown)
