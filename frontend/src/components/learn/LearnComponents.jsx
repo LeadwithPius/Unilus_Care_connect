@@ -21,7 +21,7 @@ export function SectionHeader({ eyebrow, title, aside, description }) {
   </div>
 }
 
-export function TopicCard({ title, subtitle, to, onClick }) {
+export function TopicCard({ title, subtitle, onClick }) {
   return <button type="button" className="learn-topic-card" onClick={onClick} aria-label={`Explore ${title}`}>
     <div className="learn-topic-icons"><Sparkles size={17} /><ArrowUpRight size={16} /></div>
     <div><strong>{title}</strong><span>{subtitle}</span></div>
