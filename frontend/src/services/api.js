@@ -279,6 +279,29 @@ export const api = {
     return request('DELETE', `/counsellor/availability/${availabilityId}`)
   },
 
+  wellbeingQuestionnaire() {
+    return request('GET', '/triage/questionnaire')
+  },
+
+  submitWellbeingCheckIn(questionnaireVersion, responses) {
+    return request('POST', '/triage/check-ins', {
+      questionnaireVersion,
+      responses,
+    })
+  },
+
+  myWellbeingCheckIns() {
+    return request('GET', '/triage/check-ins/mine')
+  },
+
+  submitTriageAssessment(details) {
+    return request('POST', '/triage/assessments', details)
+  },
+
+  myTriageAssessments() {
+    return request('GET', '/triage/assessments/mine')
+  },
+
   gameProgress() {
     return request('GET', '/game/progress')
   },
