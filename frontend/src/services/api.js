@@ -184,7 +184,11 @@ export const api = {
     return request('GET', '/admin/overview')
   },
 
-  adminAppointments() {\n    return request('GET', '/admin/appointments')\n  },\n\n  adminStudents() {
+  adminAppointments() {
+    return request('GET', '/admin/appointments')
+  },
+
+  adminStudents() {
     return request('GET', '/admin/students')
   },
 
