@@ -66,7 +66,7 @@ function loginView(){                                                           
    '<div class="small">'+(stu?'Lost your access? Contact the counselling office for help.':'Lost your access? Ask the administrator to reset your password.')+'</div>';   // last-resort advice, different for students and staff
  }else if(S.lm==='new'&&stu){                                                   // ---- FORM 2: create account (students only) ----
   b='<h2>Create your account</h2>'+                                             // heading
-   '<div class="small page-note">Register with your UNILUS student email. We will send a verification link before you can log in.</div>'+
+   '<div class="small page-note">Register with your UNILUS student email. Your account will be ready to use immediately.</div>'+
    '<div class="card">'+lab('Full name')+inp('lfn','Your full name','text','name')+
    lab('Student email')+lidf+
    lab('Student number')+inp('lsn','Your student number','text','off')+
@@ -118,7 +118,7 @@ async function doLogin(){
   try{
    const result=await API.register({fullName,email:id,studentNumber,password:pw});
    S.lm='in';loginHistory=['in'];render();
-   toast(result&&result.message?result.message:'Registration received. Please verify your university email.');
+   toast(result&&result.message?result.message:'Your account has been created. You can now log in.');
   }catch(error){toast(error.message||'Registration failed. Please check your details and try again.')}
   return;
  }
