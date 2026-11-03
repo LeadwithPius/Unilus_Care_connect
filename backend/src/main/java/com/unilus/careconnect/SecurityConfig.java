@@ -131,6 +131,10 @@ public class SecurityConfig {
                     "/api/auth/verify-email"
                 ).permitAll()
 
+                // Authenticated student profile endpoint.
+                .requestMatchers("/api/students/me")
+                    .hasRole("STUDENT")
+
                 // Administrator-only endpoints.
                 .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
