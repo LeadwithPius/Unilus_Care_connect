@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Activity, BookOpen, CalendarDays, Check, ChevronRight, FileText,
+  Activity, BookOpen, CalendarDays, ChevronRight, FileText,
   GraduationCap, LayoutDashboard, LoaderCircle, LogOut, Plus, RefreshCw,
-  Search, ShieldCheck, ToggleLeft, ToggleRight, Users, UserRoundCog,
+  Search, ShieldCheck, Users, UserRoundCog,
   Video, X,
 } from 'lucide-react'
 import { api } from '../services/api'
