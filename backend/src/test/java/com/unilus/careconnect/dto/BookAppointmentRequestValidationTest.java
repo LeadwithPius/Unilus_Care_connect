@@ -34,6 +34,17 @@ class BookAppointmentRequestValidationTest {
         assertFalse(validator.validate(new BookAppointmentRequest()).isEmpty());
     }
 
+
+    @Test
+    void rejectsMissingConsentDocumentWhenOtherBookingFieldsAreValid() {
+        BookAppointmentRequest request = new BookAppointmentRequest();
+        request.setAvailabilitySlotId(UUID.randomUUID());
+        request.setSupportCategoryCode("ACADEMIC_STRESS");
+        request.setCounsellingMode("FACE_TO_FACE");
+
+        assertFalse(validator.validate(request).isEmpty());
+    }
+
     @Test
     void acceptsValidBookingFields() {
         BookAppointmentRequest request = new BookAppointmentRequest();
