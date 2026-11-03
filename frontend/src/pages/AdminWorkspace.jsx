@@ -83,6 +83,7 @@ function AdminWorkspace() {
         api.adminOverview(),
         api.adminStudents(),
         api.adminCounsellors(),
+        api.adminAppointments(),
         api.adminEducation(),
         api.adminConsentDocuments(),
       ])
@@ -96,6 +97,7 @@ function AdminWorkspace() {
       setOverview(dashboard)
       setStudents(Array.isArray(studentRows) ? studentRows : [])
       setCounsellors(Array.isArray(counsellorRows) ? counsellorRows : [])
+      setAppointments(Array.isArray(appointmentRows) ? appointmentRows : [])
       setResources(Array.isArray(resourceRows) ? resourceRows : [])
       setConsentDocuments(Array.isArray(consentRows) ? consentRows : [])
     } catch (err) {
@@ -110,6 +112,8 @@ function AdminWorkspace() {
     }
   }, [navigate])
 
+  // Load workspace data from the API when this protected route mounts.
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void loadAll() }, [loadAll])
 
   const filteredStudents = useMemo(() => {
