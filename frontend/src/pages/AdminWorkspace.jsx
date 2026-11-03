@@ -75,7 +75,6 @@ function AdminWorkspace() {
   })
 
   const loadAll = useCallback(async () => {
-    setError('')
     try {
       const [me, dashboard, studentRows, counsellorRows, appointmentRows, resourceRows, consentRows] = await Promise.all([
         api.me(),
@@ -90,6 +89,7 @@ function AdminWorkspace() {
         navigate('/login', { replace: true })
         return
       }
+      setError('')
       setAccount(me)
       setOverview(dashboard)
       setStudents(Array.isArray(studentRows) ? studentRows : [])
@@ -309,6 +309,7 @@ function AdminWorkspace() {
             <div className="admin-form-actions"><button className="admin-primary-button" type="submit" disabled={busy === 'create-counsellor'}>{busy === 'create-counsellor' ? 'Creating…' : 'Create counsellor account'}</button></div>
             <p className="admin-form-help">Accounts are created as active. Counsellors must sign in and enable appointment requests before students can book.</p>
           </form>}
+          <label className="admin-search"><Search size={17} /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search counsellor name, email or title" /></label>
           <div className="admin-table-wrap"><table><thead><tr><th>COUNSELLOR</th><th>PROFILE</th><th>OPEN SLOTS</th><th>APPOINTMENTS</th><th>ACCOUNT</th><th>ACTION</th></tr></thead><tbody>
             {filteredCounsellors.map(person => <tr key={person.userId}><td><strong>{person.displayName}</strong><small>{person.email}</small></td><td>{person.professionalTitle || 'Counsellor'}<small>{person.acceptingAppointments ? 'Accepting requests' : 'Not accepting requests'}</small></td><td>{person.openSlots}</td><td>{person.appointmentCount}</td><td><StatusPill enabled={person.enabled} /></td><td><button className="admin-row-action" type="button" disabled={busy === person.userId} onClick={() => changeAccountStatus('counsellor', person)}>{busy === person.userId ? 'Saving…' : person.enabled ? 'Disable' : 'Enable'}</button></td></tr>)}
           </tbody></table>{!filteredCounsellors.length && <div className="admin-empty">No counsellor accounts match your search.</div>}</div>
