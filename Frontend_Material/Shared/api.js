@@ -43,7 +43,7 @@
     resetPassword(token,newPassword){return this.call('POST','/auth/reset-password',{token,newPassword})},
     verifyEmail(token){return this.call('POST','/auth/verify-email',{token})},
     createCounsellor(details){return this.call('POST','/admin/counsellors',{email:details.email,password:details.password,displayName:details.displayName,professionalTitle:details.professionalTitle||'',biography:details.biography||''})},
-    education(topic){return this.call('GET','/education'+(topic?'?topic='+encodeURIComponent(topic):''))},
+    education(topic,search){const params=new URLSearchParams();if(topic)params.set('topic',topic);if(search)params.set('q',search);const query=params.toString();return this.call('GET','/education'+(query?'?'+query:''))},
     gameProgress(){return this.call('GET','/game/progress')},
     saveGame(section,score){return this.call('POST','/game/progress',{section,score})}
   };
