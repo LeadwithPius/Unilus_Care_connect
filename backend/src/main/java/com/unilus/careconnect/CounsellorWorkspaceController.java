@@ -108,5 +108,7 @@ public class CounsellorWorkspaceController {
         ));
     }
 
-    public record AcceptingAppointmentsRequest(Boolean acceptingAppointments) {}\n\n    public record UpdateCounsellorProfileRequest(String displayName, String professionalTitle, String biography) {}
+    public record AcceptingAppointmentsRequest(Boolean acceptingAppointments) {}
+
+    public record UpdateCounsellorProfileRequest(String displayName, String professionalTitle, String biography) {}
 }
