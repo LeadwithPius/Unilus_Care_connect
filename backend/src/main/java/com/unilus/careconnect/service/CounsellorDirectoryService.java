@@ -36,6 +36,13 @@ public class CounsellorDirectoryService {
                             ON u.id = cp.user_id
                         WHERE u.enabled = TRUE
                           AND cp.accepting_appointments = TRUE
+                          AND EXISTS (
+                              SELECT 1
+                              FROM wellness.availability_slots av
+                              WHERE av.counsellor_profile_id = cp.id
+                                AND av.status = 'OPEN'
+                                AND av.starts_at > CURRENT_TIMESTAMP
+                          )
                         ORDER BY cp.display_name
                         """,
                         (rs, rowNum) ->
