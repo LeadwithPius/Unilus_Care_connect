@@ -331,6 +331,11 @@ export function Support() {
 
     <Message>{error}</Message>
     <Message type="success">{success}</Message>
+    <section className="journey-urgent-help" id="urgent-help">
+      <ShieldCheck size={20} />
+      <div><strong>Need help immediately?</strong><p>CareConnect is not an emergency response service and messages are not monitored continuously. If you or someone else is in immediate danger, contact local emergency services or a trusted person or university support contact now. Please do not wait for an app response.</p></div>
+    </section>
+
     {loading ? <LoadingState label="Finding counsellors and available times…" /> : <>
       <section className="journey-section">
         <div className="journey-section-heading"><div><span className="learn-section-eyebrow">MEET THE TEAM</span><h2>Available counsellors</h2></div><span className="journey-count">{counsellors.length} available</span></div>
