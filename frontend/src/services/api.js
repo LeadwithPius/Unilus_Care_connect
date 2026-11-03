@@ -212,6 +212,73 @@ export const api = {
     )
   },
 
+  studentProfile() {
+    return request('GET', '/students/me')
+  },
+
+  appointmentCategories() {
+    return request('GET', '/appointments/categories')
+  },
+
+  currentCounsellingConsent() {
+    return request('GET', '/consents/current?purposeCode=COUNSELLING')
+  },
+
+  recordConsent(consentDocumentId, decision) {
+    return request('POST', '/consents', { consentDocumentId, decision })
+  },
+
+  bookAppointment(details) {
+    return request('POST', '/appointments', details)
+  },
+
+  myAppointments() {
+    return request('GET', '/appointments/mine')
+  },
+
+  cancelAppointment(appointmentId) {
+    return request('POST', `/appointments/${appointmentId}/cancel`)
+  },
+
+  counsellorProfile() {
+    return request('GET', '/counsellor/profile')
+  },
+
+  setAcceptingAppointments(acceptingAppointments) {
+    return request('PATCH', '/counsellor/profile/accepting-appointments', {
+      acceptingAppointments,
+    })
+  },
+
+  counsellorAppointments(status) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : ''
+    return request('GET', `/counsellor/appointments${query}`)
+  },
+
+  decideCounsellorAppointment(appointmentId, decision) {
+    return request('POST', `/counsellor/appointments/${appointmentId}/decision`, {
+      decision,
+    })
+  },
+
+  updateCounsellorAttendance(appointmentId, action) {
+    return request('POST', `/counsellor/appointments/${appointmentId}/attendance`, {
+      action,
+    })
+  },
+
+  counsellorAvailability(openOnly = false) {
+    return request('GET', `/counsellor/availability?openOnly=${openOnly}`)
+  },
+
+  addCounsellorAvailability(startsAt, endsAt) {
+    return request('POST', '/counsellor/availability', { startsAt, endsAt })
+  },
+
+  deleteCounsellorAvailability(availabilityId) {
+    return request('DELETE', `/counsellor/availability/${availabilityId}`)
+  },
+
   gameProgress() {
     return request('GET', '/game/progress')
   },
