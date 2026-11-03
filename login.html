@@ -10,6 +10,7 @@
   </button>
 <div id="app"></div><!-- empty box. core.js fills it with the form, popups and the emergency button. The id "app" is what core.js looks for. No frame: it has no border, no fixed width and no height limit -->
 <noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript><!-- shown only when JavaScript is switched off -->
+<script src="Frontend_Material/Shared/api.js"></script>
 <script src="Frontend_Material/Shared/core.js"></script><!-- FIX: path. Must load FIRST: defines S (saved data), save(), toast(), modal(), render(), ROUTES and CC.mount() -->
 <script src="Frontend_Material/Shared/care_data.js"></script><!-- counsellor list, time slots, topics (not used by this page, but every page loads it) -->
 <script src="Frontend_Material/Shared/install_app.js"></script><!-- defines installApp(): the "Download app" button action -->
@@ -21,8 +22,8 @@
 const STUMAIL=/^[a-z0-9._-]+@stud\.unilus\.ac\.zm$/;                            // the only email shape students may use: letters, digits, . _ - then @stud.unilus.ac.zm. 
 const STUMSG='Use your UNILUS student email ending in @stud.unilus.ac.zm.';     // message shown when the student email is not in that shape
 const BADL='Incorrect Email or password, or the account is temporarily locked.';   // ONE vague message for every login failure, so nobody can tell whether an email exists
-const MAXFAILS=5;                                                               // wrong passwords allowed before the account is locked
-const LOCKMS=15*60*1000;                                                        // how long the lock lasts: 15 minutes in milliseconds (15 x 60 s x 1000)
+                                                               // wrong passwords allowed before the account is locked
+                                                        // how long the lock lasts: 15 minutes in milliseconds (15 x 60 s x 1000)
 let loginHistory=['in'];                                                         // tracks the last login screens visited so the back button works reliably
 
 function setLoginMode(mode){                                                     // standard helper for all login links/forms
@@ -57,22 +58,22 @@ function loginView(){                                                           
  let b;                                                                         // b will hold the main part of the screen
  if(S.lm==='forgot'){                                                           // ---- FORM 1: reset password ----
   b='<h2>Reset your password</h2>'+                                             // heading
-   '<div class="small page-note">Enter your '+idl.toLowerCase()+' and a new password to complete reset.</div>'+   // help text under the heading
-   '<div class="card">'+lab(idl)+lidf+                                          // white box, email label and email box
-   lab('New password')+inp('lnp','','password','new-password')+                 // new password label and box (id "lnp")
-   '<button class="btn" id="lgo">Reset password</button></div>'+                // main button. Every form's main button has id "lgo"; bindLogin() connects it to doLogin()
+   '<div class="small page-note">Enter your email address and we will send a password-reset link if an eligible account exists.</div>'+
+   '<div class="card">'+lab(idl)+lidf+
+   '<button class="btn" id="lgo">Send reset link</button></div>'+
+                // main button. Every form's main button has id "lgo"; bindLogin() connects it to doLogin()
    link('in','Back to log in')+                                                 // link back to the log in form
    '<div class="small">'+(stu?'Lost your access? Contact the counselling office for help.':'Lost your access? Ask the administrator to reset your password.')+'</div>';   // last-resort advice, different for students and staff
  }else if(S.lm==='new'&&stu){                                                   // ---- FORM 2: create account (students only) ----
   b='<h2>Create your account</h2>'+                                             // heading
-   '<div class="small page-note">Use your UNILUS student email (ending @stud.unilus.ac.zm). It is only used to log you in. You’ll get recovery codes in case you forget your password.</div>'+   // FIX: the old text said the email is turned into an anonymous code and never stored, but this page stores it. Re-add that sentence once your backend really does it
-   '<div class="card">'+lab('Student email')+lidf+                              // white box, label and email box
-   lab('Password')+inp('lpw','','password','new-password')+                     // password label and box (id "lpw")
-   '<div class="small field-hint">8 or more characters, with a letter and a number.</div>'+   // hint under the password box (.field-hint pulls it up closer)
-   lab('Faculty')+sel('lf',['Technology & Sciences','Business','Education','Health Sciences','Law','Humanities'])+   // faculty dropdown. ADD OR RENAME FACULTIES HERE
-   lab('Year of study')+sel('ly',[1,2,3,4,5,6,7])+                              // year dropdown 1 to 7
-   lab('Campus')+sel('lc',[['Leopards Hill','Leopards Hill (Lusaka)'],['Pioneer','Pioneer (Mass Media, Lusaka)'],['Silverest','Silverest (Chongwe)']])+   // campus dropdown: [value saved, text shown]
-   '<button class="btn" id="lgo">Create account</button></div>'+                // main button
+   '<div class="small page-note">Register with your UNILUS student email. We will send a verification link before you can log in.</div>'+
+   '<div class="card">'+lab('Full name')+inp('lfn','Your full name','text','name')+
+   lab('Student email')+lidf+
+   lab('Student number')+inp('lsn','Your student number','text','off')+
+   lab('Password')+inp('lpw','','password','new-password')+
+   '<div class="small field-hint">Use 12 to 72 characters, including at least one letter and one number.</div>'+
+   '<button class="btn" id="lgo">Create account</button></div>'+
+                // main button
    link('in','I already have an account');                                      // link back to the log in form
  }else{                                                                         // ---- FORM 3: log in (the default) ----
   b='<h2>'+(stu?'Welcome to <span class="brand"><br>CareConnect</br></span>':S.lr==='c'?'Counsellor log in':'Administrator log in')+'</h2>'+   // heading depends on the tab. FIX: the word CareConnect now uses the .brand class (teal) from styles.css
@@ -81,7 +82,7 @@ function loginView(){                                                           
    lab('Password')+inp('lpw','','password','current-password')+                 // password label and box (id "lpw")
    '<button class="btn" id="lgo">Log in</button></div>'+                        // main button
    link('forgot','Forgot password?')+(stu?link('new','Create account'):'')+     // "Forgot password?" for everyone, "Create account" for students only
-   (stu?'':'<div class="small demo-note">Demo: m.lungu@unilus.edu.zm / Temp1234 or admin@unilus.edu.zm / Admin1234. You’ll be asked to set your own password.</div>');   // staff demo logins. DELETE THIS LINE before real students use the app
+   (stu?'':'<div class="small demo-note">Staff accounts are provisioned by the CareConnect administrator. Use your registered UNILUS email.</div>');   // staff demo logins. DELETE THIS LINE before real students use the app
  }
  return inst+roleTabs()+b}                                                      // final screen = banner + role buttons + the chosen form
 
@@ -95,67 +96,61 @@ function bindLogin(){
  const i=$('inst');if(i)i.onclick=installApp}                                   // "Download app" button -> installApp() (only exists if the banner is shown)
 
 // ===== 5. WRONG-PASSWORD COUNTER =====
-function strike(a){                                                             // a = the account that just failed
- a.fails=(a.fails||0)+1;                                                        // add one failed attempt (the "||0" covers accounts with no counter yet)
- if(a.fails>=MAXFAILS){a.lock=Date.now()+LOCKMS;a.fails=0}                      // too many: lock until "now + 15 minutes" and restart the counter
- save()}                                                                        // write it to the browser storage
-
-// ===== 6. THE MAIN BUTTON: log in, create account or reset (depending on the form) =====
-function doLogin(){
- const id=($('lid').value||'').trim().toLowerCase();                            // what was typed in the email box: no spaces, all lowercase
- if(S.lr==='s'&&!STUMAIL.test(id))return toast(STUMSG);                         // students: stop with a message if the email shape is wrong
- if(S.lm==='forgot')return doReset(id);                                         // on the reset form, hand over to doReset() and stop here
- const pw=$('lpw').value;                                                       // the password typed in the password box
- if(S.lm==='new'){                                                              // ---- creating an account ----
-  if(!pwOk(pw))return toast(PWMSG);                                             // password too weak: stop with the rules message. FIX: removed the old "id.length<3" check, it could never run because STUMAIL already guarantees a long enough email
-  if(S.acc[id])return toast('We couldn’t create that account. If you already have one, log in or reset your password.');   // email already used: stop (the wording doesn't confirm which)
-  const codes=mkCodes();                                                        // generate recovery codes for later use
-  S.acc[id]={pw,role:'s',codes,fails:0,must:0};                                 // save the account: password, role s=student, codes, 0 failed attempts, must=0 (no forced password change)
-  S.fac=$('lf').value;S.yr=$('ly').value;S.camp=$('lc').value;                  // save faculty, year and campus for the profile page
-  save();
-  S.lm='in';
-  loginHistory=['in'];
-  render();
-  toast('Account created. Please log in with your email and password.');
+async function doLogin(){
+ const id=($('lid').value||'').trim().toLowerCase();
+ if(S.lr==='s'&&!STUMAIL.test(id))return toast(STUMSG);
+ if(S.lr!=='s'&&!/^[^@\s]+@(?:[a-z0-9-]+\.)*unilus\.ac\.zm$/i.test(id))return toast('Use your UNILUS university email address.');
+ if(S.lm==='forgot'){
+  try{
+   await API.forgotPassword(id);
+   S.lm='in';loginHistory=['in'];render();
+   toast('If an eligible account exists, a password-reset link will be sent to its email address.');
+  }catch(error){toast(error.message||'We could not process that request. Please try again.')}
   return;
  }
- const a=S.acc[id];                                                             // ---- logging in: look up the account ----
- if(!a||a.role!==S.lr||(a.lock&&a.lock>Date.now()))return toast(BADL);          // no such account, wrong tab, or still locked: vague message
- if(a.pw!==pw){strike(a);return toast(BADL)}                                    // wrong password: count the failure, vague message
- a.fails=0;                                                                     // correct password: clear the failed-attempt counter
- if(S.lr==='c'){                                                                // counsellors only:
-  const c=S.cs.find(x=>x.e===id);                                               // find them in the counsellor list (S.cs in core.js)
-  if(c&&!c.on)return toast('This account has been deactivated.');               // switched off by the administrator: stop
-  S.name=c?c.n:id}                                                              // remember their display name (or the email if not in the list)
- if(S.lr==='a')S.name='Administrator';                                          // administrator display name
- S.me=id;S.role=S.lr;                                                           // remember who is logging in and their role
- if(a.must)return forceChange();                                                // temporary password: force them to choose their own first (password_tools.js)
- S.in=true;S.cview='dash';save();enter()}                                       // mark as logged in, counsellor view = dashboard, store it, go to their area
+ const pw=$('lpw')?$('lpw').value:'';
+ if(S.lm==='new'){
+  const fullName=($('lfn').value||'').trim();
+  const studentNumber=($('lsn').value||'').trim();
+  if(!fullName)return toast('Enter your full name.');
+  if(!studentNumber)return toast('Enter your student number.');
+  if(!pwOk(pw))return toast(PWMSG);
+  try{
+   const result=await API.register({fullName,email:id,studentNumber,password:pw});
+   S.lm='in';loginHistory=['in'];render();
+   toast(result&&result.message?result.message:'Registration received. Please verify your university email.');
+  }catch(error){toast(error.message||'Registration failed. Please check your details and try again.')}
+  return;
+ }
+ if(!pw)return toast('Enter your password.');
+ const requestedRole=({s:'STUDENT',c:'COUNSELLOR',a:'ADMIN'})[S.lr];
+ try{
+  const result=await API.login(id,pw,requestedRole);
+  const roles=Array.isArray(result.roles)?result.roles:[];
+  if(!roles.includes(requestedRole)){API.logout();return toast('This account is not authorised for the selected portal.');}
+  S.me=result.email||id;S.role=S.lr;S.name=S.me;S.in=true;S.cview='dash';save();enter();
+ }catch(error){toast(error.message||BADL);}
+}
 
 // ===== 7. RESET PASSWORD WITH A RECOVERY CODE =====
-function doReset(id){
- const np=$('lnp').value,a=S.acc[id];                                            // the new password typed, and the account for that email
- const bad=()=>toast('That email or password could not be reset.');               // vague message for any reset failure
- if(!pwOk(np))return toast(PWMSG);                                              // new password too weak: stop
- if(!a||a.role!==S.lr)return bad();                                             // no such account or wrong tab: stop
- a.pw=np;a.must=0;a.fails=0;a.lock=0;                                           // set the new password, clear forced-change, failures and any lock
- S.lm='in';render();                                                            // go back to the log in form and redraw
- toast('Password changed. Log in with your new password.')}
-
-// ===== 7b. PASSWORD RESET WITHOUT VERIFICATION CODES =====
-
 // ===== 8. GO TO THE RIGHT AREA AFTER LOGIN =====
 function enter(){location.href=ROUTES[S.role]}                                  // ROUTES (core.js) maps s/c/a to a page; the browser jumps there
 
 // ===== 9. START-UP: runs once when the page opens =====
 S.lm='in';                                                                      // FIX: always open on the plain log in form (the last form used is saved in the browser and could reopen on "Create account")
 S.noClose=false;                                                                // FIX: a popup left open when the tab was closed must not stay stuck
-if(S.in&&ROUTES[S.role])enter();                                                // FIX: already logged in AND role known: skip this page (the extra check avoids jumping to a page called "undefined")
-else{                                                                           // otherwise show the login screen
- CC.mount({public:true,title:'Welcome',root:'',act(){},                         // core.js builds the page. public:true = no login needed here; root:'' = this page sits at the top folder; act = nothing (this page uses its own buttons)
-  view:()=>loginView()+'<div class="small reset-demo"><a href="#" id="rst">Reset demo data</a></div>',   // what to draw: the screen + the "Reset demo data" link. FIX: uses the .reset-demo class
-  after(){bindLogin();$('rst').onclick=e=>{e.preventDefault();resetDemo()}}});  // after each draw: connect the buttons; the demo link wipes all saved demo data and reloads
- if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});   // lets the app work offline, only on https or localhost; a missing sw.js is ignored
+function showLogin(){
+ S.in=false;S.role='';S.me='';S.lm='in';S.noClose=false;
+ CC.mount({public:true,title:'Welcome',root:'',act(){},view:()=>loginView(),after(){bindLogin()}});
 }
+if(API.token){
+ API.me().then(account=>{
+  const roles=Array.isArray(account&&account.roles)?account.roles:[];
+  const role=roles.includes('STUDENT')?'s':roles.includes('COUNSELLOR')?'c':roles.includes('ADMIN')?'a':'';
+  if(!role||!ROUTES[role]){API.logout();showLogin();return;}
+  S.in=true;S.role=role;S.me=account.email||'';S.name=account.fullName||account.email||'';save();enter();
+ }).catch(()=>{API.logout();showLogin()});
+}else showLogin();
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 document.getElementById('back').onclick=()=>{if(S.lm&&S.lm!=='in'){goLoginBack();return}history.length>1?history.back():null};
 </script></body></html><!-- end of this page's code / end of the visible page / end of the document -->

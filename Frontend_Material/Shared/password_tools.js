@@ -1,6 +1,6 @@
 /* password_tools.js: password rules, recovery codes, change password, first-login password change, temporary passwords. */
-const PWMSG='Password must be 8 to 72 characters with at least one letter and one number.';
-const pwOk=p=>/^(?=.*[A-Za-z])(?=.*\d).{8,72}$/.test(p||'');
+const PWMSG='Password must be 12 to 72 characters with at least one letter and one number.';
+const pwOk=p=>/^(?=.*[A-Za-z])(?=.*\d).{12,72}$/.test(p||'');
 const CODEA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function mkCodes(){return Array.from({length:8},()=>{let t='';for(let i=0;i<10;i++)t+=CODEA[Math.random()*CODEA.length|0];return t.slice(0,5)+'-'+t.slice(5)})}
 function mkTemp(){let t;do{t='';for(let i=0;i<10;i++)t+=CODEA[Math.random()*CODEA.length|0]}while(!/\d/.test(t)||!/[A-Z]/.test(t));return t}
