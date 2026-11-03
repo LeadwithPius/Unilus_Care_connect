@@ -1,9 +1,11 @@
 /* core.js: loaded by EVERY page. Saved demo state, the phone frame, popups, navigation. */
 const $=id=>document.getElementById(id);
-const KEY='careconnect_demo_v1';   // demo data lives in this browser only (localStorage)
-const S0=()=>({role:'',booked:false,bookingStatus:'',prioritySessions:[],supportRestart:false,followup:false,followupSession:null,sessionHistory:[],callCompleted:false,step:0,cat:'',mode:'Face-to-Face',why:'',cns:'',slot:'',consent:false,hist:[],frozen:false,cview:'dash',crisis:2,noshow:[],snake:null,snakeBlockedUntil:0,cin:'',cout:'',transfers:0,re:false,calls:[],game:{},in:false,lr:'s',lm:'in',me:'',noClose:false,acc:{'m.lungu@unilus.edu.zm':{pw:'Temp1234',role:'c',codes:[],must:1},'e.sishemi@unilus.edu.zm':{pw:'Temp1234',role:'c',codes:[],must:1},'admin@unilus.edu.zm':{pw:'Admin1234',role:'a',codes:[],must:1}},counsellorAvailability:{'Mr. A. Lungu':'AVAILABLE','Ms. E. Sishemi':'AVAILABLE','Dr. C. Phiri':'AVAILABLE'},avail:'AVAILABLE',name:'',cs:[{n:'Mr. Lungu',e:'m.lungu@unilus.edu.zm',on:1},{n:'Ms. E. Sishemi',e:'e.sishemi@unilus.edu.zm',on:1}],flash:'',fac:'',yr:'',camp:''});
+const KEY='careconnect_frontend_v1';   // demo data lives in this browser only (localStorage)
+const S0=()=>({role:'',booked:false,bookingStatus:'',prioritySessions:[],supportRestart:false,followup:false,followupSession:null,sessionHistory:[],callCompleted:false,step:0,cat:'',mode:'Face-to-Face',why:'',cns:'',slot:'',consent:false,hist:[],frozen:false,cview:'dash',crisis:2,noshow:[],snake:null,snakeBlockedUntil:0,cin:'',cout:'',transfers:0,re:false,calls:[],game:{},in:false,lr:'s',lm:'in',me:'',noClose:false,acc:{},counsellorAvailability:{'Mr. A. Lungu':'AVAILABLE','Ms. E. Sishemi':'AVAILABLE','Dr. C. Phiri':'AVAILABLE'},avail:'AVAILABLE',name:'',cs:[],flash:'',fac:'',yr:'',camp:''});
 let S=S0();
 try{const j=JSON.parse(localStorage.getItem(KEY));if(j)S=Object.assign(S0(),j)}catch(e){}
+// Browser-stored demo accounts are never used for real authentication.
+S.acc={};S.cs=[];
 S.appointmentDate=S.appointmentDate||'';S.appointmentTime=S.appointmentTime||'';S.calendarMonth=S.calendarMonth||'';
 S.sessionHistory=Array.isArray(S.sessionHistory)?S.sessionHistory:[];
 S.prioritySessions=Array.isArray(S.prioritySessions)?S.prioritySessions:[];
@@ -50,10 +52,21 @@ window.close_=close;
 const CC={
   cleanups:[],   // tool files register timers to stop when a popup is dismissed
   closeAll(){CC.cleanups.forEach(f=>f());close()},
-  logout(){S.in=false;S.cview='dash';sessionStorage.removeItem(STUDENT_NAV_HISTORY);save();location.href=PAGE.root+'index.html'},
-  mount(P){
+  logout(){API.logout();S.in=false;S.role='';S.me='';S.cview='dash';sessionStorage.removeItem(STUDENT_NAV_HISTORY);save();location.href=PAGE.root+'index.html'},
+  async mount(P){
     window.PAGE=P;
-    if(!P.public&&(!S.in||S.role!==P.role)){location.replace(P.root+'index.html');return}
+    if(!P.public){
+      try{
+        const account=await API.me();
+        const roles=Array.isArray(account&&account.roles)?account.roles:[];
+        const requiredRole=({s:'STUDENT',c:'COUNSELLOR',a:'ADMIN'})[P.role];
+        if(!requiredRole||!roles.includes(requiredRole))throw new Error('This account does not have the required portal role.');
+        S.in=true;S.role=P.role;S.me=account.email||'';S.name=account.fullName||account.email||'';save();
+      }catch(error){
+        console.warn('CareConnect session validation failed:',error.message);
+        API.logout();S.in=false;S.role='';S.me='';save();location.replace(P.root+'login.html');return;
+      }
+    }
     const c=P.role==='c';
     if(c)document.body.classList.add('counsellor-portal');
     if(P.role==='a')document.body.classList.add('admin-portal');
@@ -77,7 +90,7 @@ const CC={
     }
     else $('nav').style.display='none';
     if(c){
-      $('drn').innerHTML=CNAV.map(a=>`<button data-href="${a[0]}">${a[1]}</button>`).join('')+'<button data-x="pw">Change password</button><button data-x="out">Log out</button>';
+      $('drn').innerHTML=CNAV.map(a=>`<button data-href="${a[0]}">${a[1]}</button>`).join('')+'<button data-x="out">Log out</button>';
       $('hb').onclick=()=>$('dr').classList.add('on');$('dri').onclick=()=>$('dr').classList.remove('on');
       document.querySelectorAll('#drn button').forEach(b=>b.onclick=()=>{if(b.dataset.href){save();location.href=b.dataset.href}else{$('dr').classList.remove('on');b.dataset.x==='pw'?changePw():CC.logout()}});
     }

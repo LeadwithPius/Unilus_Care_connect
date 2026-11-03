@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verify your CareConnect email</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="Frontend_Material/Shared/styles.css"></head>
+<body><main class="phone" style="max-width:520px;margin:8vh auto;padding:24px"><h2>Email verification</h2><p id="status" class="small">Verifying your email address…</p><a class="btn" href="login.html" id="login" hidden>Go to login</a></main>
+<script src="Frontend_Material/Shared/api.js"></script>
+<script>
+(async function(){
+ const status=document.getElementById('status'),login=document.getElementById('login');
+ const token=new URLSearchParams(location.search).get('token');
+ if(!token){status.textContent='This verification link is missing its token. Open the complete link from your email.';return;}
+ try{const result=await API.verifyEmail(token);status.textContent=result&&result.message?result.message:'Your email has been verified. You can now log in.';login.hidden=false;}
+ catch(error){status.textContent=error.message||'This verification link is invalid, expired, or already used.';login.hidden=false;}
+})();
+</script></body></html>
