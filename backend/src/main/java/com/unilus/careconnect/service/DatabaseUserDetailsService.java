@@ -2,6 +2,7 @@ package com.unilus.careconnect.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -14,9 +15,15 @@ import org.springframework.stereotype.Service;
 public class DatabaseUserDetailsService implements UserDetailsService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final boolean emailVerificationRequired;
 
-    public DatabaseUserDetailsService(JdbcTemplate jdbcTemplate) {
+    public DatabaseUserDetailsService(
+            JdbcTemplate jdbcTemplate,
+            @Value("${careconnect.auth.email-verification-required:true}")
+            boolean emailVerificationRequired) {
+
         this.jdbcTemplate = jdbcTemplate;
+        this.emailVerificationRequired = emailVerificationRequired;
     }
 
     @Override
@@ -74,13 +81,15 @@ public class DatabaseUserDetailsService implements UserDetailsService {
                 databaseUser.id()
         );
 
+        boolean accountDisabled =
+                !databaseUser.enabled()
+                || (emailVerificationRequired
+                    && !databaseUser.emailVerified());
+
         return User.withUsername(databaseUser.email())
                 .password(databaseUser.passwordHash())
                 .authorities(authorities)
-                .disabled(
-                        !databaseUser.enabled()
-                                || !databaseUser.emailVerified()
-                )
+                .disabled(accountDisabled)
                 .build();
     }
 
