@@ -17,15 +17,12 @@ public class StudentService {
 
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
-    private final EmailVerificationService emailVerificationService;
 
     public StudentService(
             JdbcTemplate jdbcTemplate,
-            PasswordEncoder passwordEncoder,
-            EmailVerificationService emailVerificationService) {
+            PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
-        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional
@@ -71,7 +68,7 @@ public class StudentService {
                     INSERT INTO credentials.users (
                         id, email, password_hash, enabled, email_verified, created_at
                     )
-                    VALUES (?, ?, ?, false, false, ?)
+                    VALUES (?, ?, ?, true, true, ?)
                     """, userId, normalizedEmail, passwordHash, createdAt);
 
             jdbcTemplate.update("""
@@ -108,8 +105,6 @@ public class StudentService {
                     VALUES (?, ?)
                     """, userId, studentRoleId);
 
-            // Send only after the account and its related records have been created.
-            emailVerificationService.sendVerificationEmail(userId, normalizedEmail);
 
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException(
