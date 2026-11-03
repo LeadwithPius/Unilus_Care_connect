@@ -34,7 +34,6 @@ import {
   ForgotPasswordPage,
   ResetPasswordPage,
   VerifyEmailPage,
-  StudentPortal,
   CounsellorPortal,
   AdminPortal,
 } from './AuthPages.jsx'

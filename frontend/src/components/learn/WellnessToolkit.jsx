@@ -24,13 +24,25 @@ function BreathingExercise({ onClose }) {
 }
 
 function SnakeGame({ onClose }) {
+  const cooldownMs = 12 * 60 * 60 * 1000
+  const durationMs = 5 * 60 * 1000
+  const [blockedUntil, setBlockedUntil] = useState(() => Number(localStorage.getItem('careconnect-snake-blocked-until') || 0))
+  const [remaining, setRemaining] = useState(durationMs)
   const [snake, setSnake] = useState([[5, 5], [4, 5], [3, 5]])
   const [food, setFood] = useState([11, 9])
   const [direction, setDirection] = useState([1, 0])
   const [score, setScore] = useState(0)
+  const [finished, setFinished] = useState(false)
+  const snakeRef = useRef(snake)
+  const foodRef = useRef(food)
   const directionRef = useRef(direction)
   directionRef.current = direction
+  snakeRef.current = snake
+  foodRef.current = food
+  const coolingDown = blockedUntil > Date.now()
+
   useEffect(() => {
+    if (coolingDown || finished) return undefined
     const handleKey = event => {
       const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
       const next = keys[event.key]
@@ -39,26 +51,48 @@ function SnakeGame({ onClose }) {
         setDirection(next)
       }
     }
+    const startedAt = Date.now()
     window.addEventListener('keydown', handleKey)
     const timer = window.setInterval(() => {
-      setSnake(current => {
-        const head = [(current[0][0] + directionRef.current[0] + 20) % 20, (current[0][1] + directionRef.current[1] + 20) % 20]
-        if (current.some(([x, y]) => x === head[0] && y === head[1])) {
-          setScore(0)
-          return [[5, 5], [4, 5], [3, 5]]
-        }
-        const next = [head, ...current]
-        if (head[0] === food[0] && head[1] === food[1]) {
-          setScore(value => value + 1)
-          setFood([Math.floor(Math.random() * 20), Math.floor(Math.random() * 20)])
-        } else next.pop()
-        return next
-      })
+      const elapsed = Date.now() - startedAt
+      setRemaining(Math.max(0, durationMs - elapsed))
+      if (elapsed >= durationMs) {
+        const until = Date.now() + cooldownMs
+        localStorage.setItem('careconnect-snake-blocked-until', String(until))
+        setBlockedUntil(until)
+        setFinished(true)
+        return
+      }
+      const current = snakeRef.current
+      const vector = directionRef.current
+      const head = [(current[0][0] + vector[0] + 20) % 20, (current[0][1] + vector[1] + 20) % 20]
+      if (current.some(([x, y]) => x === head[0] && y === head[1])) {
+        const reset = [[5, 5], [4, 5], [3, 5]]
+        snakeRef.current = reset
+        setSnake(reset)
+        setScore(0)
+        return
+      }
+      const next = [head, ...current]
+      const currentFood = foodRef.current
+      if (head[0] === currentFood[0] && head[1] === currentFood[1]) {
+        const nextFood = [Math.floor(Math.random() * 20), Math.floor(Math.random() * 20)]
+        foodRef.current = nextFood
+        setFood(nextFood)
+        setScore(value => value + 1)
+      } else next.pop()
+      snakeRef.current = next
+      setSnake(next)
     }, 180)
     return () => { window.removeEventListener('keydown', handleKey); window.clearInterval(timer) }
-  }, [food])
+  }, [coolingDown, finished])
+
+  if (coolingDown) return <Modal title="Snake Xenzia is resting" onClose={onClose}>
+    <p className="tool-modal-intro">You have reached the play limit for this session. You can play again in {Math.ceil((blockedUntil - Date.now()) / 3600000)} hour(s).</p>
+  </Modal>
+
   return <Modal title="Snake Xenzia" onClose={onClose}>
-    <p className="tool-modal-intro">Use the arrow keys to guide the snake. Take a break whenever you need one.</p>
+    <p className="tool-modal-intro">Use the arrow keys to guide the snake. Each play session is limited to five minutes. Take a break whenever you need one.</p>
     <div className="snake-board" role="img" aria-label={`Snake game, score ${score}`}>
       {Array.from({ length: 400 }, (_, index) => {
         const x = index % 20, y = Math.floor(index / 20)
@@ -66,8 +100,9 @@ function SnakeGame({ onClose }) {
         return <span key={index} className={isSnake ? 'snake-cell' : food[0] === x && food[1] === y ? 'food-cell' : ''} />
       })}
     </div>
-    <div className="snake-score">Score: {score}</div>
+    <div className="snake-score">Score: {score} · {Math.ceil(remaining / 60000)} min left</div>
     <div className="snake-controls">{[['↑',[0,-1]],['←',[-1,0]],['↓',[0,1]],['→',[1,0]]].map(([label, vector]) => <button key={label} type="button" onClick={() => { if (vector[0] !== -directionRef.current[0] || vector[1] !== -directionRef.current[1]) setDirection(vector) }}>{label}</button>)}</div>
+    {finished && <p className="tool-modal-note">Your five-minute play session has ended. Snake Xenzia will be available again in 12 hours.</p>}
   </Modal>
 }
 
