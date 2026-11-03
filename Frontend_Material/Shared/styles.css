@@ -423,3 +423,78 @@ body > div.logo { width: 100%; height: auto; border-radius: 0 }
 .edu-video-modal{position:relative;text-align:left}.edu-video-modal h2{font:400 24px Gloock,serif}.edu-video-modal>p{color:#65736c;font-size:12px;line-height:1.6}.edu-modal-close{position:absolute;right:0;top:0;width:34px;height:34px;border-radius:50%;background:#edf4ef;color:#244d3e;font-size:24px}.edu-player{position:relative;width:100%;aspect-ratio:16/9;margin:14px 0;overflow:hidden;border-radius:12px;background:#102c25}.edu-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.edu-external-video{padding:25px;text-align:center;background:#edf4ef;border-radius:12px}.edu-original-link{display:inline-block;margin:8px 0;color:#205c4d;font-size:12px;font-weight:700}
 @media(max-width:760px){.education-page .body{padding:12px 16px 105px}.edu-hero{min-height:190px;padding:22px 18px}.edu-hero-art{flex-basis:95px;height:95px}.edu-topic-grid,.edu-video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.edu-tool-grid{grid-template-columns:1fr}}
 @media(max-width:480px){.edu-hero-art{flex-basis:68px;height:68px}.edu-hero-art b{font-size:14px}.edu-topic-grid,.edu-video-grid{grid-template-columns:1fr}.edu-video-copy p{min-height:0}}
+
+
+/* Consistent student portal visual system: Home, Support and Me */
+.care-page { background:#f5f7f4; color:#24352e; }
+.care-page .body { width:min(100%,1120px); margin-inline:auto; padding:24px clamp(16px,3vw,32px) 112px; }
+.care-page .body h2 { color:#20352c; font:400 clamp(29px,4vw,38px)/1.15 Gloock,serif; margin:0 0 10px; }
+.care-page .body h3 { color:#20352c; text-align:left; font-size:16px; line-height:1.35; }
+.care-page .small { color:#68776f; font-size:12px; line-height:1.65; }
+.care-page .card,
+.care-page .opt,
+.care-page .booking-date-picker {
+  border:1px solid #e0e8e1; border-radius:18px; background:#fff;
+  color:#26352e; box-shadow:0 5px 18px rgba(22,53,41,.055);
+}
+.care-page .card { padding:20px; margin:0 0 16px; }
+.care-page .btn { min-height:44px; border-radius:12px; padding:11px 17px; font-weight:700; letter-spacing:.01em; }
+.care-page .btn:not(.r) { background:#205c4d; color:#fff; }
+.care-page .btn.o { background:#edf4ef; color:#205c4d; border:1px solid #dce8df; }
+.care-page .btn.r { background:#a94335; color:#fff; }
+.care-page button:disabled { opacity:.48; cursor:not-allowed; }
+.care-page input:not([type=checkbox]), .care-page textarea, .care-page select {
+  border:1px solid #d7e2d9; border-radius:12px; background:#fff; color:#26352e;
+  padding:12px 14px; font:inherit; max-width:100%;
+}
+.care-page :focus-visible { outline:3px solid rgba(55,118,100,.28); outline-offset:2px; }
+
+/* Home */
+.care-home-page .body { padding-top:22px; }
+.care-home-page .home-heading { margin-bottom:30px; }
+.care-home-page .home-greeting { color:#20352c; font:400 clamp(30px,4vw,42px)/1.1 Gloock,serif!important; margin:0 0 18px!important; }
+.care-home-page .home-checkin-hero { width:100%; max-width:1080px; margin:0; transform:none; aspect-ratio:2.35/1; }
+.care-home-page .wellness-img { border-radius:24px; box-shadow:0 12px 30px rgba(18,63,56,.12); }
+.care-home-page .quick-access-title { margin:28px 0 14px; color:#20352c; font:400 27px Gloock,serif; }
+.care-home-page .quick-access-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.care-home-page .quick-access-grid > div { min-width:0; padding:22px; border:1px solid #e0e8e1; border-radius:18px; background:#fff; box-shadow:0 5px 18px rgba(22,53,41,.055); }
+.care-home-page .quick-access-card-title { display:flex; align-items:center; gap:12px; margin:0 0 12px; font-size:17px; }
+.care-home-page .quick-access-icon { width:34px; height:34px; object-fit:contain; }
+.care-home-page .quick-access-grid .small { min-height:42px; margin-bottom:12px; }
+
+/* Support booking */
+.care-support-page .body > h2 { margin-top:2px; }
+.care-support-page .support-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:18px 0; }
+.care-support-page .opt { min-height:94px; padding:18px; text-align:left; transition:border-color .18s,transform .18s,box-shadow .18s; }
+.care-support-page .opt:hover { transform:translateY(-2px); box-shadow:0 9px 22px rgba(22,53,41,.09); }
+.care-support-page .opt.on { border:2px solid #347664; background:#f0f6f1; color:#205c4d; }
+.care-support-page .opt small { display:block; margin-top:7px; color:#68776f; line-height:1.5; }
+.care-support-page .support-category { display:flex; align-items:center; gap:14px; font-weight:700; }
+.care-support-page .support-category-icon { width:36px; height:36px; object-fit:contain; }
+.care-support-page .support-counsellor { display:flex; flex-direction:column; gap:7px; }
+.care-support-page .support-counsellor-heading { display:flex; align-items:center; gap:10px; }
+.care-support-page .support-counsellor-icon { width:34px; height:34px; object-fit:contain; }
+.care-support-page .support-action { min-width:190px; margin:8px 0 20px; }
+.care-support-page .booking-date-picker { padding:18px; margin:18px 0; }
+.care-support-page .calendar-heading strong { color:#20352c; }
+.care-support-page .calendar-day,.care-support-page .calendar-time { border-radius:10px; color:#294238; }
+.care-support-page .calendar-day.selected,.care-support-page .calendar-time.selected { background:#205c4d; color:#fff; }
+
+/* Me / profile */
+.care-profile-page .profile-identity { align-items:center; padding:22px; margin-bottom:18px; border:1px solid #dce8df; border-radius:20px; background:linear-gradient(115deg,#eaf3ed,#fff 72%); box-shadow:0 5px 18px rgba(22,53,41,.05); }
+.care-profile-page .prof-me { width:58px; height:58px; padding:8px; border-radius:18px; background:#fff; object-fit:contain; }
+.care-profile-page .profile-identity-copy b { color:#20352c; font:400 23px Gloock,serif; }
+.care-profile-page .profile-call-button { display:flex; align-items:center; justify-content:center; gap:10px; }
+.care-profile-page .profile-call-icon { display:inline-flex; align-items:center; }
+.care-profile-page .profile-call-icon img { width:20px; height:20px; object-fit:contain; }
+.care-profile-page .row { padding:12px 0; border-bottom:1px solid #edf1ed; color:#31453b; }
+.care-profile-page .row:last-child { border-bottom:0; }
+.care-profile-page .card > .btn { width:100%; margin-top:10px; }
+@media(max-width:650px) {
+ .care-home-page .quick-access-grid,.care-support-page .support-grid { grid-template-columns:1fr; }
+ .care-home-page .home-checkin-hero { aspect-ratio:1.35/1; }
+ .care-home-page .wellness-img { object-position:45% center; }
+ .care-home-page .quick-access-grid > div { padding:18px; }
+ .care-support-page .support-action { width:100%; }
+ .care-page .body { padding-top:20px; }
+}
