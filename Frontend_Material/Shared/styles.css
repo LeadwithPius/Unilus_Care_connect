@@ -581,3 +581,79 @@ body > div.logo { width: 100%; height: auto; border-radius: 0 }
  .care-counsellor-workspace .body .cal > div { min-height:35px; font-size:11px; }
  .care-admin-workspace .body .card .btn { width:100%; }
 }
+
+
+/* Animated, lightweight cloud-inspired landing background (no WebGL dependency) */
+.landing {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:100svh;
+  padding:36px 22px;
+  background:linear-gradient(145deg,#f4f7f3 0%,#eaf2ed 48%,#f7eee7 100%);
+}
+.cloud-backdrop {
+  position:absolute;
+  z-index:-1;
+  inset:-18%;
+  pointer-events:none;
+  opacity:.9;
+  filter:blur(34px);
+  background:
+    radial-gradient(ellipse at 18% 28%,rgba(111,170,151,.58) 0%,rgba(111,170,151,0) 36%),
+    radial-gradient(ellipse at 78% 22%,rgba(224,190,164,.62) 0%,rgba(224,190,164,0) 34%),
+    radial-gradient(ellipse at 58% 72%,rgba(90,145,130,.48) 0%,rgba(90,145,130,0) 38%),
+    radial-gradient(ellipse at 12% 82%,rgba(194,216,199,.72) 0%,rgba(194,216,199,0) 34%);
+  transform:scale(1);
+  animation:care-cloud-drift 22s ease-in-out infinite alternate;
+}
+.cloud-backdrop::before,
+.cloud-backdrop::after {
+  content:"";
+  position:absolute;
+  width:54vw;
+  height:54vw;
+  min-width:320px;
+  min-height:320px;
+  border-radius:50%;
+  filter:blur(48px);
+  background:rgba(255,255,255,.48);
+}
+.cloud-backdrop::before { left:8%; top:18%; animation:care-cloud-float 18s ease-in-out infinite alternate; }
+.cloud-backdrop::after { right:4%; bottom:8%; background:rgba(83,139,120,.18); animation:care-cloud-float 24s ease-in-out infinite alternate-reverse; }
+.landing .blob { display:none; }
+.landing > :not(.cloud-backdrop) { z-index:1; }
+.landing .logo { position:relative; }
+.landing .front-btn { position:relative; }
+@keyframes care-cloud-drift {
+  from { transform:translate3d(-2%,1%,0) scale(1); }
+  to { transform:translate3d(2%,-2%,0) scale(1.12); }
+}
+@keyframes care-cloud-float {
+  from { transform:translate3d(-5%,-3%,0) scale(.92); }
+  to { transform:translate3d(7%,6%,0) scale(1.12); }
+}
+
+/* Password visibility control used by login and registration */
+.password-field { position:relative; display:flex; align-items:center; width:100%; }
+.password-field > input { flex:1; min-width:0; padding-right:76px!important; }
+.password-toggle {
+  position:absolute;
+  right:9px;
+  top:50%;
+  transform:translateY(-50%);
+  min-width:54px;
+  padding:7px 9px;
+  border:0;
+  border-radius:8px;
+  background:#edf4ef;
+  color:#205c4d;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.password-toggle:hover { background:#dfece3; }
+.password-toggle:focus-visible { outline:3px solid rgba(55,118,100,.32); outline-offset:2px; }
+@media(prefers-reduced-motion:reduce) {
+  .cloud-backdrop,.cloud-backdrop::before,.cloud-backdrop::after { animation:none!important; }
+}
