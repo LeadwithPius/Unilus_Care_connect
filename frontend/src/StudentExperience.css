@@ -359,3 +359,8 @@
   .journey-scale-options { gap:6px; }
   .journey-scale-options button { flex:1; width:auto; }
 }
+
+.journey-urgent-help { display:flex; align-items:flex-start; gap:12px; margin:18px 0; padding:15px; border:1px solid #f0d8c5; border-radius:14px; background:#fff7ed; color:#a65b31; scroll-margin-top:20px; }
+.journey-urgent-help>svg { flex:0 0 auto; margin-top:1px; }
+.journey-urgent-help strong { color:#854522; font-size:11px; }
+.journey-urgent-help p { margin:5px 0 0; color:#8b634b; font-size:10px; line-height:1.6; }
