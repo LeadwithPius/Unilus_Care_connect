@@ -1,25 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
 import { Gamepad2, Sprout, Wind, X } from 'lucide-react'
 
+const BREATHING_PHASES = [
+  { label: 'Breathe in', seconds: 4, className: 'is-inhaling' },
+  { label: 'Hold gently', seconds: 2, className: 'is-holding' },
+  { label: 'Breathe out', seconds: 6, className: 'is-exhaling' },
+]
+
 function BreathingExercise({ onClose }) {
-  const [phase, setPhase] = useState('Breathe in')
-  const [seconds, setSeconds] = useState(4)
+  const [phaseIndex, setPhaseIndex] = useState(0)
+  const [seconds, setSeconds] = useState(BREATHING_PHASES[0].seconds)
+  const phase = BREATHING_PHASES[phaseIndex]
+
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setSeconds(value => {
-        if (value <= 1) {
-          setPhase(current => current === 'Breathe in' ? 'Breathe out' : 'Breathe in')
-          return 4
-        }
-        return value - 1
+      setSeconds(current => {
+        if (current > 1) return current - 1
+        setPhaseIndex(index => (index + 1) % BREATHING_PHASES.length)
+        return BREATHING_PHASES[(phaseIndex + 1) % BREATHING_PHASES.length].seconds
       })
     }, 1000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [phaseIndex])
+
   return <Modal title="A moment to breathe" onClose={onClose}>
-    <p className="tool-modal-intro">Follow the circle gently. There is no need to force your breath.</p>
-    <div className={`guided-breath-orb ${phase === 'Breathe in' ? 'is-inhaling' : 'is-exhaling'}`}><strong>{phase}</strong><span>{seconds}</span></div>
-    <p className="tool-modal-note">If focusing on your breathing feels uncomfortable, stop and try noticing the room around you instead.</p>
+    <p className="tool-modal-intro">Follow the circle gently. Breathe in as it expands, pause softly, then breathe out as it contracts.</p>
+    <div className={`guided-breath-orb ${phase.className}`} aria-live="polite">
+      <strong>{phase.label}</strong><span>{seconds}</span>
+    </div>
+    <p className="tool-modal-note">The rhythm is 4 seconds in, a gentle 2-second pause, and 6 seconds out. There is no need to force your breath. If this feels uncomfortable, stop and try noticing the room around you instead.</p>
   </Modal>
 }
 
@@ -27,30 +36,43 @@ function SnakeGame({ onClose }) {
   const cooldownMs = 12 * 60 * 60 * 1000
   const durationMs = 5 * 60 * 1000
   const [blockedUntil, setBlockedUntil] = useState(() => Number(localStorage.getItem('careconnect-snake-blocked-until') || 0))
+  const [now, setNow] = useState(0)
   const [remaining, setRemaining] = useState(durationMs)
   const [snake, setSnake] = useState([[5, 5], [4, 5], [3, 5]])
   const [food, setFood] = useState([11, 9])
   const [direction, setDirection] = useState([1, 0])
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
-  const snakeRef = useRef(snake)
-  const foodRef = useRef(food)
-  const directionRef = useRef(direction)
-  directionRef.current = direction
-  snakeRef.current = snake
-  foodRef.current = food
-  const coolingDown = blockedUntil > Date.now()
+  const snakeRef = useRef([[5, 5], [4, 5], [3, 5]])
+  const foodRef = useRef([11, 9])
+  const directionRef = useRef([1, 0])
+  const coolingDown = blockedUntil > now
+
+  useEffect(() => {
+    const updateClock = () => setNow(Date.now())
+    updateClock()
+    const clock = window.setInterval(updateClock, 60000)
+    return () => window.clearInterval(clock)
+  }, [])
+
+  useEffect(() => { snakeRef.current = snake }, [snake])
+  useEffect(() => { foodRef.current = food }, [food])
+  useEffect(() => { directionRef.current = direction }, [direction])
 
   useEffect(() => {
     if (coolingDown || finished) return undefined
+
     const handleKey = event => {
       const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
       const next = keys[event.key]
-      if (next && (next[0] !== -directionRef.current[0] || next[1] !== -directionRef.current[1])) {
+      const current = directionRef.current
+      if (next && (next[0] !== -current[0] || next[1] !== -current[1])) {
         event.preventDefault()
+        directionRef.current = next
         setDirection(next)
       }
     }
+
     const startedAt = Date.now()
     window.addEventListener('keydown', handleKey)
     const timer = window.setInterval(() => {
@@ -60,9 +82,11 @@ function SnakeGame({ onClose }) {
         const until = Date.now() + cooldownMs
         localStorage.setItem('careconnect-snake-blocked-until', String(until))
         setBlockedUntil(until)
+        setNow(Date.now())
         setFinished(true)
         return
       }
+
       const current = snakeRef.current
       const vector = directionRef.current
       const head = [(current[0][0] + vector[0] + 20) % 20, (current[0][1] + vector[1] + 20) % 20]
@@ -73,6 +97,7 @@ function SnakeGame({ onClose }) {
         setScore(0)
         return
       }
+
       const next = [head, ...current]
       const currentFood = foodRef.current
       if (head[0] === currentFood[0] && head[1] === currentFood[1]) {
@@ -80,15 +105,21 @@ function SnakeGame({ onClose }) {
         foodRef.current = nextFood
         setFood(nextFood)
         setScore(value => value + 1)
-      } else next.pop()
+      } else {
+        next.pop()
+      }
       snakeRef.current = next
       setSnake(next)
     }, 180)
-    return () => { window.removeEventListener('keydown', handleKey); window.clearInterval(timer) }
-  }, [coolingDown, finished])
+
+    return () => {
+      window.removeEventListener('keydown', handleKey)
+      window.clearInterval(timer)
+    }
+  }, [coolingDown, finished, cooldownMs, durationMs])
 
   if (coolingDown) return <Modal title="Snake Xenzia is resting" onClose={onClose}>
-    <p className="tool-modal-intro">You have reached the play limit for this session. You can play again in {Math.ceil((blockedUntil - Date.now()) / 3600000)} hour(s).</p>
+    <p className="tool-modal-intro">You have reached the play limit for this session. You can play again in {Math.ceil((blockedUntil - now) / 3600000)} hour(s).</p>
   </Modal>
 
   return <Modal title="Snake Xenzia" onClose={onClose}>
@@ -101,7 +132,13 @@ function SnakeGame({ onClose }) {
       })}
     </div>
     <div className="snake-score">Score: {score} · {Math.ceil(remaining / 60000)} min left</div>
-    <div className="snake-controls">{[['↑',[0,-1]],['←',[-1,0]],['↓',[0,1]],['→',[1,0]]].map(([label, vector]) => <button key={label} type="button" onClick={() => { if (vector[0] !== -directionRef.current[0] || vector[1] !== -directionRef.current[1]) setDirection(vector) }}>{label}</button>)}</div>
+    <div className="snake-controls">{[['↑',[0,-1]],['←',[-1,0]],['↓',[0,1]],['→',[1,0]]].map(([label, vector]) => <button key={label} type="button" onClick={() => {
+      const current = directionRef.current
+      if (vector[0] !== -current[0] || vector[1] !== -current[1]) {
+        directionRef.current = vector
+        setDirection(vector)
+      }
+    }}>{label}</button>)}</div>
     {finished && <p className="tool-modal-note">Your five-minute play session has ended. Snake Xenzia will be available again in 12 hours.</p>}
   </Modal>
 }
@@ -162,4 +199,4 @@ export default function WellnessToolkit() {
   </section>
 }
 
-function SparklesIcon(props) { return <Sprout {...props} /> }
+function SparklesIcon(props) { return <Sprout {...props} />}
