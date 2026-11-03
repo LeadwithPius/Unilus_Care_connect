@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -81,9 +81,7 @@ export function Home() {
   const [error, setError] = useState('')
   const [cancellingId, setCancellingId] = useState(null)
 
-  async function loadDashboard() {
-    setLoading(true)
-    setError('')
+  const loadDashboard = useCallback(async () => {
     try {
       const [student, bookings, questionnaireList, checkInList] = await Promise.all([
         api.studentProfile(),
@@ -100,9 +98,9 @@ export function Home() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { loadDashboard() }, [])
+  useEffect(() => { void loadDashboard() }, [loadDashboard])
 
   const upcoming = useMemo(() => appointments
     .filter(item => !['COMPLETED', 'CANCELLED', 'REJECTED', 'NO_SHOW'].includes(String(item.status).toUpperCase()))
