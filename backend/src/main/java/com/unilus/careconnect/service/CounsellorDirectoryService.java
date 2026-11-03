@@ -33,8 +33,7 @@ public class CounsellorDirectoryService {
                         FROM credentials.counsellor_profiles cp
                         JOIN credentials.users u
                             ON u.id = cp.user_id
-                        WHERE cp.accepting_appointments = TRUE
-                          AND u.enabled = TRUE
+                        WHERE u.enabled = TRUE
                         ORDER BY cp.display_name
                         """,
                         (rs, rowNum) ->
@@ -94,9 +93,6 @@ public class CounsellorDirectoryService {
 
                     return entry;
                 })
-                .filter(entry ->
-                        !entry.getAvailability().isEmpty()
-                )
                 .toList();
     }
 
