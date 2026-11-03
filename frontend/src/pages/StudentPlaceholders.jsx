@@ -71,6 +71,12 @@ function AppointmentCard({ appointment, onCancel, cancellingId, showCancel = tru
 export function Home() {
   const [profile, setProfile] = useState(null)
   const [appointments, setAppointments] = useState([])
+  const [questionnaire, setQuestionnaire] = useState(null)
+  const [checkIns, setCheckIns] = useState([])
+  const [checkInResponses, setCheckInResponses] = useState({})
+  const [savingCheckIn, setSavingCheckIn] = useState(false)
+  const [checkInMessage, setCheckInMessage] = useState('')
+  const [checkInError, setCheckInError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cancellingId, setCancellingId] = useState(null)
@@ -79,12 +85,16 @@ export function Home() {
     setLoading(true)
     setError('')
     try {
-      const [student, bookings] = await Promise.all([
+      const [student, bookings, questionnaireList, checkInList] = await Promise.all([
         api.studentProfile(),
         api.myAppointments(),
+        api.wellbeingQuestionnaire(),
+        api.myWellbeingCheckIns(),
       ])
       setProfile(student)
       setAppointments(Array.isArray(bookings) ? bookings : [])
+      setQuestionnaire(Array.isArray(questionnaireList) ? questionnaireList[0] || null : null)
+      setCheckIns(Array.isArray(checkInList) ? checkInList : [])
     } catch (err) {
       setError(err.message || 'We could not load your dashboard.')
     } finally {
@@ -97,6 +107,37 @@ export function Home() {
   const upcoming = useMemo(() => appointments
     .filter(item => !['COMPLETED', 'CANCELLED', 'REJECTED', 'NO_SHOW'].includes(String(item.status).toUpperCase()))
     .sort((a, b) => new Date(a.scheduledStart) - new Date(b.scheduledStart)), [appointments])
+
+
+  async function submitCheckIn(event) {
+    event.preventDefault()
+    setCheckInError('')
+    setCheckInMessage('')
+    const questions = questionnaire?.questions || []
+    const missing = questions.some(question =>
+      question.required && !Object.hasOwn(checkInResponses, question.key)
+    )
+    if (missing) {
+      setCheckInError('Please answer each required question before saving your check-in.')
+      return
+    }
+
+    setSavingCheckIn(true)
+    try {
+      const result = await api.submitWellbeingCheckIn(
+        questionnaire.version,
+        checkInResponses
+      )
+      setCheckInMessage(result.message || 'Your check-in has been saved.')
+      setCheckInResponses({})
+      const history = await api.myWellbeingCheckIns()
+      setCheckIns(Array.isArray(history) ? history : [])
+    } catch (err) {
+      setCheckInError(err.message || 'Your check-in could not be saved.')
+    } finally {
+      setSavingCheckIn(false)
+    }
+  }
 
   async function cancelAppointment(id) {
     if (!window.confirm('Cancel this counselling appointment?')) return
@@ -152,6 +193,46 @@ export function Home() {
           <p>If you would like to talk to someone, you can browse available counsellors and request a session.</p>
           <Link to="/support">Find a counsellor <ArrowRight size={16} /></Link>
         </div>}
+      </section>
+
+
+      <section className="journey-section journey-checkin-section">
+        <div className="journey-section-heading">
+          <div><span className="learn-section-eyebrow">A MOMENT FOR YOURSELF</span><h2>Wellbeing check-in</h2></div>
+          <span className="journey-count">Private reflection</span>
+        </div>
+        {questionnaire ? <>
+          <p className="journey-checkin-intro">{questionnaire.description || 'A short reflection on how things have been feeling lately.'}</p>
+          <form className="journey-checkin-form" onSubmit={submitCheckIn}>
+            {(questionnaire.questions || []).map(question => (
+              <fieldset className="journey-checkin-question" key={question.key}>
+                <legend>{question.prompt}{question.required ? ' *' : ''}</legend>
+                <div className="journey-scale-options">
+                  {[1, 2, 3, 4, 5].map(value => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={Number(checkInResponses[question.key]) === value ? 'is-selected' : ''}
+                      aria-pressed={Number(checkInResponses[question.key]) === value}
+                      onClick={() => setCheckInResponses(current => ({ ...current, [question.key]: value }))}
+                    >{value}</button>
+                  ))}
+                </div>
+                <small>Choose a number from 1 (low) to 5 (high).</small>
+              </fieldset>
+            ))}
+            <Message>{checkInError}</Message>
+            <Message type="success">{checkInMessage}</Message>
+            <button className="journey-primary-button" type="submit" disabled={savingCheckIn || !(questionnaire.questions || []).length}>
+              {savingCheckIn ? <><LoaderCircle className="journey-spin" size={16} /> Saving…</> : 'Save my check-in'}
+            </button>
+          </form>
+        </> : <div className="journey-empty"><HeartHandshake size={23} /><h3>No check-in is available right now</h3><p>You can still explore the learning library or request support from a counsellor.</p></div>}
+        {checkIns.length > 0 && <div className="journey-checkin-history">
+          <strong>Recent reflections</strong>
+          {checkIns.slice(0, 3).map(item => <div key={item.id}><span>Wellbeing check-in</span><time>{formatDate(item.createdAt)}</time></div>)}
+        </div>}
+        <p className="journey-disclaimer">This check-in is for personal reflection. It is not a diagnosis, a risk assessment or a substitute for professional support. If you need help, you can reach out to a counsellor.</p>
       </section>
 
       <section className="journey-reassurance">
