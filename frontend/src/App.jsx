@@ -20,6 +20,7 @@ import './StudentExperience.css'
 import AppLayout from './components/layout/AppLayout.jsx'
 import Learn from './pages/Learn.jsx'
 import CounsellorWorkspace from './pages/CounsellorWorkspace.jsx'
+import AdminWorkspace from './pages/AdminWorkspace.jsx'
 import { Home, Support, Me } from './pages/StudentPlaceholders.jsx'
 
 import {
@@ -506,7 +507,7 @@ function App() {
           <Route path="/me" element={<Me />} />
         </Route>
         <Route path="/counsellor" element={<CounsellorWorkspace />} />
-        <Route path="/admin" element={<AdminPortal />} />
+        <Route path="/admin" element={<AdminWorkspace />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
