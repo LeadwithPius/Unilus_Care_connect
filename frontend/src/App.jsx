@@ -19,6 +19,7 @@ import './App.css'
 import './StudentExperience.css'
 import AppLayout from './components/layout/AppLayout.jsx'
 import Learn from './pages/Learn.jsx'
+import CounsellorWorkspace from './pages/CounsellorWorkspace.jsx'
 import { Home, Support, Me } from './pages/StudentPlaceholders.jsx'
 
 import {
@@ -34,7 +35,6 @@ import {
   ForgotPasswordPage,
   ResetPasswordPage,
   VerifyEmailPage,
-  CounsellorPortal,
   AdminPortal,
 } from './AuthPages.jsx'
 
@@ -505,7 +505,7 @@ function App() {
           <Route path="/support" element={<Support />} />
           <Route path="/me" element={<Me />} />
         </Route>
-        <Route path="/counsellor" element={<CounsellorPortal />} />
+        <Route path="/counsellor" element={<CounsellorWorkspace />} />
         <Route path="/admin" element={<AdminPortal />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
