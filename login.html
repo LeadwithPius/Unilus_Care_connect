@@ -96,12 +96,6 @@ function bindLogin(){
  const i=$('inst');if(i)i.onclick=installApp}                                   // "Download app" button -> installApp() (only exists if the banner is shown)
 
 // ===== 5. WRONG-PASSWORD COUNTER =====
-function strike(a){                                                             // a = the account that just failed
- a.fails=(a.fails||0)+1;                                                        // add one failed attempt (the "||0" covers accounts with no counter yet)
- if(a.fails>=MAXFAILS){a.lock=Date.now()+LOCKMS;a.fails=0}                      // too many: lock until "now + 15 minutes" and restart the counter
- save()}                                                                        // write it to the browser storage
-
-// ===== 6. THE MAIN BUTTON: log in, create account or reset (depending on the form) =====
 async function doLogin(){
  const id=($('lid').value||'').trim().toLowerCase();
  if(S.lr==='s'&&!STUMAIL.test(id))return toast(STUMSG);
