@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
@@ -80,6 +80,7 @@ export default function CounsellorWorkspace() {
   const [profile, setProfile] = useState(null)
   const [appointments, setAppointments] = useState([])
   const [availability, setAvailability] = useState([])
+  const [loadedAt, setLoadedAt] = useState(0)
   const [filter, setFilter] = useState('ALL')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState('')
@@ -90,9 +91,7 @@ export default function CounsellorWorkspace() {
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
 
-  async function loadWorkspace() {
-    setLoading(true)
-    setError('')
+  const loadWorkspace = useCallback(async () => {
     try {
       const [account, bookings, slots] = await Promise.all([
         api.me(),
@@ -109,6 +108,7 @@ export default function CounsellorWorkspace() {
       setProfile(counsellor)
       setAppointments(Array.isArray(bookings) ? bookings : [])
       setAvailability(Array.isArray(slots) ? slots : [])
+      setLoadedAt(Date.now())
     } catch (err) {
       if (err.status === 401 || err.status === 403) {
         api.logout()
@@ -119,9 +119,9 @@ export default function CounsellorWorkspace() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [navigate])
 
-  useEffect(() => { loadWorkspace() }, [])
+  useEffect(() => { void loadWorkspace() }, [loadWorkspace])
 
   const visibleAppointments = useMemo(() => filter === 'ALL'
     ? appointments
@@ -130,7 +130,7 @@ export default function CounsellorWorkspace() {
 
   const pendingCount = appointments.filter(item => item.status === 'REQUESTED').length
   const activeCount = appointments.filter(item => ['CONFIRMED', 'CHECKED_IN'].includes(item.status)).length
-  const upcomingSlots = availability.filter(slot => new Date(slot.startsAt) > new Date())
+  const upcomingSlots = availability.filter(slot => new Date(slot.startsAt).getTime() > loadedAt)
     .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
 
   async function handleDecision(id, decision) {
