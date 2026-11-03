@@ -15,6 +15,7 @@
 <script src="../../Frontend_Material/Shared/password_tools.js"></script>
 <script>
 // Support: book a session (category, consent, mode, counsellor, time). Also used to reschedule.
+document.body.classList.add('care-page','care-support-page');
 function isPastAppointmentTime(date,time){return new Date(`${date}T${time}:00`)<=new Date()}
 function view(){
  const s=S.step;
