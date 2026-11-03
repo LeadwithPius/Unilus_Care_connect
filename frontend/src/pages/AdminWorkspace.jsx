@@ -11,7 +11,8 @@ import './AdminWorkspace.css'
 
 const sections = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'students', label: 'Students', icon: GraduationCap },\n  { id: 'appointments', label: 'Appointments', icon: CalendarDays },
+  { id: 'students', label: 'Students', icon: GraduationCap },
+  { id: 'appointments', label: 'Appointments', icon: CalendarDays },
   { id: 'counsellors', label: 'Counsellors', icon: Users },
   { id: 'education', label: 'Education Hub', icon: BookOpen },
   { id: 'consent', label: 'Consent & policies', icon: ShieldCheck },
