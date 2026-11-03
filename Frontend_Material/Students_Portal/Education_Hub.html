@@ -1,37 +1,28 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>UNILUS CareConnect · Education hub</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Gloock&display=swap" rel="stylesheet">
-<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
-<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
-</head><body>
-<div class="logo">
-    <img src="Careconnect_logo-removebg-preview.png" alt="CareConnect-Logo" class="app-logo" style="margin:0px;" >
-</div>
-<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
-<div class="phone" id="phone"></div>
-<script src="../../Frontend_Material/Shared/api.js"></script>
-<script src="../../Frontend_Material/Shared/core.js"></script>
-<script src="../../Frontend_Material/Shared/care_data.js"></script>
-<script src="../../Frontend_Material/Shared/emergency_session.js"></script>
-<script src="../../Frontend_Material/Shared/password_tools.js"></script>
-<script src="../../Frontend_Material/Shared/wellness_tools.js"></script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNILUS CareConnect · Learning & wellbeing</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Gloock&display=swap" rel="stylesheet">
+<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#f5f7f4">
+<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css"></head><body class="education-page">
+<div class="logo"><img src="Careconnect_logo-removebg-preview.png" alt="CareConnect" class="app-logo" style="margin:0"></div>
+<noscript><p style="padding:20px">CareConnect needs JavaScript to load learning resources.</p></noscript><div class="phone" id="phone"></div>
+<script src="../../Frontend_Material/Shared/api.js"></script><script src="../../Frontend_Material/Shared/core.js"></script><script src="../../Frontend_Material/Shared/care_data.js"></script><script src="../../Frontend_Material/Shared/emergency_session.js"></script><script src="../../Frontend_Material/Shared/password_tools.js"></script><script src="../../Frontend_Material/Shared/wellness_tools.js"></script>
 <script>
-// Education Hub: the first screen a student sees after logging in.
-function view(){return `<h2 style="font-family:'Gloock', sans-serif; letter-spacing:0.07em; margin-bottom:5px; margin-top:0; font-size:28px; overflow-wrap:break-word;">Education hub</h2><div class="small" style="margin-bottom:18px;">Learn at your own pace.</div>
- <h3 style="margin-top:0; margin-bottom:15px; letter-spacing:0.08em; font-family:'Gloock', sans-serif;">Learning tools</h3>
- <div class="hub-grid">`+Object.keys(TOPICS).map(k=>`<button class="opt hub-button hub-${k.toLowerCase().replace(/[^a-z0-9]+/g,'-')} learning-tool" data-topic="${k}" style="margin-bottom:14px; font-family:'Inter', sans-serif;"><img src="Cover-learning-icon.png" alt=""><span class="learning-tool-copy"><span class="hub-button-title">${k}</span><small style="color:#444; font-family:'Inter', sans-serif; font-size:10px;">Tap to read</small></span></button>`).join('')+`<button class="opt hub-button hub-videos learning-tool" data-a="videos" style="margin-bottom:14px; font-family:'Inter', sans-serif;"><img src="video-play-icon.png" alt=""><span class="learning-tool-copy"><span class="hub-button-title">Video tutorials</span><small style="color:#444; font-family:'Inter', sans-serif; font-size:10px;">Short visual lessons</small></span></button></div>
- <h3 style="margin-top:22px; margin-bottom:15px; letter-spacing:0.05em; font-family:'Gloock', sans-serif;">Wellness toolkit</h3>
- <div class="hub-grid">
- <button class="opt hub-button hub-breathe" data-a="breathe"><span class="hub-button-title">🫁 Breathe</span><small>Guided breathing for focus and calm</small></button>
-
- <button class="opt hub-button hub-snake" data-a="snake"><span class="hub-button-title">🐍 Snake Xenzia</span><small>Retro grounding game to interrupt panic loops</small></button>
- <button class="opt hub-button hub-goal-achiever" data-a="goalAchiever"><span class="hub-button-title">🌱 Goal achiever</span><small>Grow a virtual plant by completing your own objectives</small></button>
- </div>`}
-function videos(){modal(`<h3>Video tutorials</h3><p class="small">Videos are coming soon and will be loaded from the backend API.</p><div class="card" style="margin-top:10px;border-style:dashed"><div class="small">Coming soon:</div><div class="row"><span>Box breathing</span><span class="small">API</span></div><div class="row"><span>Grounding when panicking</span><span class="small">API</span></div><div class="row"><span>Sleep and exam stress</span><span class="small">API</span></div></div><button class="btn" onclick="close_()">Close</button>`)}
-function act(a){({breathe,finch,snake,goalAchiever,videos})[a]()}
-function after(){document.querySelectorAll('[data-topic]').forEach(b=>b.onclick=()=>modal(`<h3>${b.dataset.topic}</h3><p class="small">${TOPICS[b.dataset.topic]}</p><button class="btn" onclick="close_()">Close</button>`))}
+let videosData=[],activeTopic='All',searchTerm='';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function view(){return `
+<section class="edu-hero"><div><span class="edu-eyebrow">YOUR WELLBEING, YOUR PACE</span><h1>Learn a little.<br><em>Feel a little stronger.</em></h1><p>Practical, supportive resources for the things student life brings.</p></div><div class="edu-hero-art"><span>✦</span><b>Take<br>a breath.</b><i>●</i></div></section>
+<section class="edu-section"><div class="edu-section-heading"><div><span class="edu-eyebrow">EXPLORE</span><h2>Learning library</h2></div><p>Small steps count.</p></div><div class="edu-topic-grid">`+Object.keys(TOPICS).map(k=>`<button class="edu-topic-card" data-topic="${esc(k)}"><span class="edu-topic-icon">✳</span><b>${esc(k)}</b><small>Explore practical guidance</small><span class="edu-topic-arrow">↗</span></button>`).join('')+`</div></section>
+<section class="edu-video-section"><div class="edu-section-heading"><div><span class="edu-eyebrow">WATCH & PRACTISE</span><h2>Video tutorials</h2></div><span class="edu-count" id="video-count">Loading videos…</span></div><p class="edu-intro">Short, expert-led videos to help with grounding, stress, breathing and emotional wellbeing.</p>
+<label class="edu-search"><span>⌕</span><input id="video-search" type="search" placeholder="Search videos or topics…" aria-label="Search videos"></label><div class="edu-filter-row" id="video-filters"></div><div class="edu-video-grid" id="video-grid"><div class="edu-loading">Finding helpful videos for you…</div></div><p class="edu-source-note">Videos are provided by their original publishers. CareConnect does not replace professional counselling or emergency support.</p></section>
+<section class="edu-section"><div class="edu-section-heading"><div><span class="edu-eyebrow">PAUSE & RESET</span><h2>Wellness toolkit</h2></div></div><div class="edu-tool-grid"><button class="edu-tool-card" data-a="breathe"><span>◉</span><b>Guided breathing</b><small>Slow down and refocus.</small></button><button class="edu-tool-card" data-a="snake"><span>✧</span><b>Snake Xenzia</b><small>A gentle distraction and reset.</small></button><button class="edu-tool-card" data-a="goalAchiever"><span>🌱</span><b>Goal achiever</b><small>Grow through small goals.</small></button></div></section>`;}
+function youtubeId(url){try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1);if(u.hostname.includes('youtube.com'))return u.searchParams.get('v');}catch(e){}return null;}
+function playVideo(id){const v=videosData.find(x=>String(x.id)===String(id));if(!v)return;const yt=youtubeId(v.resourceUrl);const media=yt?`<div class="edu-player"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt)}?rel=0" title="${esc(v.title)}" loading="lazy" allow="accelerometer; autoplay; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`:`<div class="edu-external-video"><span>▶</span><p>Watch this resource on its publisher's website.</p><a class="edu-watch-link" href="${esc(v.resourceUrl)}" target="_blank" rel="noopener noreferrer">Watch video ↗</a></div>`;modal(`<div class="edu-video-modal"><button class="edu-modal-close" onclick="close_()" aria-label="Close">×</button><span class="edu-eyebrow">${esc(v.topic)}</span><h2>${esc(v.title)}</h2><p>${esc(v.summary)}</p>${media}<a class="edu-original-link" href="${esc(v.resourceUrl)}" target="_blank" rel="noopener noreferrer">Open original video ↗</a><p class="edu-attribution">Educational resource from the original publisher.</p></div>`);}
+function drawFilters(){const topics=['All',...new Set(videosData.map(v=>v.topic).filter(Boolean))];$('video-filters').innerHTML=topics.map(t=>`<button class="edu-filter ${t===activeTopic?'active':''}" data-filter="${esc(t)}">${esc(t)}</button>`).join('');document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{activeTopic=b.dataset.filter;drawFilters();drawVideos();});}
+function drawVideos(){const grid=$('video-grid');if(!grid)return;const term=searchTerm.toLowerCase();const list=videosData.filter(v=>(activeTopic==='All'||v.topic===activeTopic)&&(!term||[v.title,v.summary,v.topic].some(s=>String(s||'').toLowerCase().includes(term))));$('video-count').textContent=list.length+' videos';grid.innerHTML=list.length?list.map(v=>`<article class="edu-video-card"><button class="edu-video-thumb" data-play="${esc(v.id)}" aria-label="Play ${esc(v.title)}"><span class="edu-play">▶</span><span class="edu-thumb-label">${esc(v.topic)}</span></button><div class="edu-video-copy"><span class="edu-video-topic">${esc(v.topic)}</span><h3>${esc(v.title)}</h3><p>${esc(v.summary)}</p><button class="edu-watch-button" data-play="${esc(v.id)}">Watch video <span>↗</span></button></div></article>`).join(''):'<div class="edu-empty"><span>⌕</span><h3>No videos found</h3><p>Try another search or choose a different topic.</p><button class="edu-reset-filter" id="clear-video-filter">Clear filters</button></div>';document.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playVideo(b.dataset.play));const clear=$('clear-video-filter');if(clear)clear.onclick=()=>{activeTopic='All';searchTerm='';$('video-search').value='';drawFilters();drawVideos();};}
+async function loadVideos(){try{const data=await API.education();videosData=(Array.isArray(data)?data:Array.isArray(data?.content)?data.content:[]).filter(v=>String(v.contentType||'').toUpperCase()==='VIDEO'&&v.resourceUrl);drawFilters();drawVideos();if(!videosData.length)$('video-grid').innerHTML='<div class="edu-empty"><span>✦</span><h3>New videos are on the way</h3><p>There are no published video tutorials yet. Please check back soon.</p></div>';}catch(e){$('video-count').textContent='Unavailable';$('video-grid').innerHTML=`<div class="edu-empty"><span>↻</span><h3>We couldn’t load the video library</h3><p>${esc(e.message||'Please try again.')}</p><button class="edu-reset-filter" id="retry-videos">Try again</button></div>`;$('retry-videos').onclick=loadVideos;}}
+function videos(){document.querySelector('.edu-video-section')?.scrollIntoView({behavior:'smooth'});}
+function act(a){({breathe,finch,snake,goalAchiever,videos})[a]?.();}
+function after(){document.querySelectorAll('[data-topic]').forEach(b=>b.onclick=()=>modal(`<div class="edu-topic-modal"><span class="edu-eyebrow">LEARNING NOTE</span><h2>${esc(b.dataset.topic)}</h2><p>${esc(TOPICS[b.dataset.topic])}</p><button class="btn" onclick="close_()">Got it</button></div>`));$('video-search').addEventListener('input',e=>{searchTerm=e.target.value;drawVideos();});loadVideos();}
 CC.mount({role:'s',title:'Education hub',nav:'learn',root:'../../',view,act,after});
 </script></body></html>
