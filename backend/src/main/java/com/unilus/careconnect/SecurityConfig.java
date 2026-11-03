@@ -135,6 +135,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
 
+                // Student-facing counselling consent and directory endpoints.
+                .requestMatchers("/api/consents/**")
+                    .hasRole("STUDENT")
+
+                .requestMatchers("/api/counsellors/**")
+                    .hasRole("STUDENT")
+
                 // Counsellor triage endpoints.
                 .requestMatchers("/api/triage/counsellor/**")
                     .hasRole("COUNSELLOR")
