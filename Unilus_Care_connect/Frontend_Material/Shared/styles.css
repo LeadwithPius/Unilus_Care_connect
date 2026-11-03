@@ -17,8 +17,8 @@
 /* ---------- 2. RESET + PAGE ---------- */
 *, *::before, *::after {
   box-sizing: border-box;   /* width includes padding and border, so boxes never overflow */
-  margin: 0;                /* remove the browser's default outer spacing */
-  padding: 0;               /* remove the browser's default inner spacing */
+  margin: 4.px;                /* remove the browser's default outer spacing */
+  padding: -0.9px ;               /* remove the browser's default inner spacing */
 }
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;   /* the app font. CHANGE THE FONT HERE (e.g. 'Inter', sans-serif after adding it from Google Fonts) */
@@ -29,6 +29,14 @@ body {
 button { font: inherit; cursor: pointer; border: 0 }   /* buttons use the page font, show a hand cursor, no border */
 h2 { font-size: 22px; color: var(--g); margin: 2px 0 10px }   /* page headings */
 h3 { font-size: 16px; color: var(--g); margin-bottom: 6px; text-align: center; }   /* popup / card headings */
+body.counsellor-portal .body > h1,
+body.counsellor-portal .body > h2,
+body.counsellor-portal .body > div:not(.card) > h1,
+body.counsellor-portal .body > div:not(.card) > h2,
+body.admin-portal .body > h1,
+body.admin-portal .body > h2 { font-family: 'Gloock', serif }
+.drawer h3,
+.drawer nav button { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif }
 .small { font-size: 12px; color: var(--mu); line-height: 1.4 } /* small grey helper text (used everywhere) */
 .hid { display: none }                                         /* add class "hid" to hide anything */
 .load-fail { margin: 20px; padding: 14px; background: #fbeeea; color: #7a2a1a; font: 14px sans-serif; border-radius: 10px }  /* red "could not load" message */
@@ -36,18 +44,16 @@ h3 { font-size: 16px; color: var(--g); margin-bottom: 6px; text-align: center; }
 .back-btn img { width: 40px; height: 30px; object-fit: contain}
 .menu-btn { background: none; font-size: 22px; color: var(--g) }  /* the ☰ button on counsellor pages */
 .phone { display: flex; flex-direction: column; min-height: 100vh; }
-.body { flex: 1; padding: 14px 14px 80px }  /* keep room below the content so the fixed bottom nav never covers the last items */
+.body { flex: 1; padding: 14px 14px 96px }  /* keep room below the content so the fixed bottom nav never covers the last items */
 .body.student-body:not(.student-body-learn) { padding-top: 54px; }
 @media (max-width: 600px) {
   .top { padding-right: 78px }   /* phones: Crisis Line is a small circle, so less room needed */
   html, body { overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; }
   html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
-  .phone { overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
-  .phone::-webkit-scrollbar { display: none; width: 0; height: 0; }
-  .body { padding-bottom: 88px; }
+  .body { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 }
-@media (min-width: 900px) {                                  /* big screens: */
-  .body { padding: 2px 2px }                               /*   roomier content */
+@media (min-width: 900px) {                              /* big screens: */
+  .body { padding: 2px 2px 96px }                           /*   roomier content with clearance for the fixed nav */
 }
 .app-logo{
   width: 80px;
@@ -74,6 +80,7 @@ h3 { font-size: 16px; color: var(--g); margin-bottom: 6px; text-align: center; }
 }
 @media (max-width: 600px) {
   .home-checkin-hero { width: calc(100vw - 32px); }
+  .home-checkin-hero .well-btn { top: 67%; }
 }
 .home-checkin-hero .well-btn {
   position: absolute;
@@ -123,16 +130,23 @@ body.public .body { width: 100%; max-width: 440px; margin: 0 auto; padding: 56px
   will-change: transform;         /* performance hint for the animation */
   z-index: 6;                     /* above the top bar and page content, below popups */
 }
-.btn-sos span { color: #fff }     /* the "Emergency hotline" text colour */
-.sos-img { display: block; width: 24px; height: 24px; margin: 0; object-fit: contain; flex: none; filter: brightness(0) invert(1) }
+.btn-sos span { color: #fff }     /* the emergency-session text colour */
+.sos-img { display: block; width: 26px; height: 26px; margin: 0; object-fit: contain; flex: none }
 .btn-sos:hover, .btn-sos:focus-visible {         /* when hovered or keyboard-focused: */
   transform: translateY(-4px);                   /*   lift up 4px */
   box-shadow: 0 8px 20px rgba(227,160,105,.45), 0 0 18px rgba(255,194,124,.6);   /*   orange glow */
 }
 @media (max-width: 600px) {       /* phones: show only the round icon */
   .btn-sos { width: 56px; height: 56px; padding: 0; gap: 0; border-radius: 50% }
+  .sos-img { width: 32px; height: 32px }
   .btn-sos span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }  /* hide the text but keep it for screen readers */
 }
+.priority-booking-info { margin: 10px 0; text-align: center; }
+.priority-time-label { display: block; margin-top: 12px; }
+.priority-error { background: #fbeeea; border-radius: 10px; padding: 10px; }
+.priority-session-heading { display: block; text-align: center; }
+.priority-session-row { justify-content: center; text-align: center; }
+.priority-session-row > span { flex: 1; }
 
 /* ---------- 5. BUTTONS + FORM FIELDS ---------- */
 .btn {                            /* main full-width button */
@@ -163,6 +177,8 @@ body.public .body { width: 100%; max-width: 440px; margin: 0 auto; padding: 56px
   background: #fff;
 }
 textarea { width: 100%; border: 1.5px solid var(--ln); border-radius: 10px; padding: 10px; font: inherit; font-size: 13px; min-height: 70px }
+.student-body-support textarea { display: block; margin: 14px 0 0 }
+.student-body-support .support-action { margin-top: 14px }
 .pill { border-radius: 99px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #fff; background: var(--t) }  /* small rounded label/button */
 
 /* ---------- 6. CARDS + LISTS ---------- */
@@ -217,7 +233,31 @@ textarea { width: 100%; border: 1.5px solid var(--ln); border-radius: 10px; padd
 .support-counsellor-heading > span { min-width: 0; }
 .support-counsellor-icon { width: 38px; height: 38px; flex: 0 0 38px; object-fit: contain; border-radius: 50%; background: #DCEAE4; padding: 3px; }
 .support-grid .support-category { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-.support-category-icon { display: block; width: 42px; height: 42px; object-fit: contain; }
+.support-grid .opt { background: #DCEAE4; border-color: #c9e6da; color: var(--tx); }
+.support-grid .opt.on { background: #DCEAE4; border-color: var(--t); color: var(--tx); }
+.student-body-support .support-grid .opt,
+.student-body-support button.support-action,
+.student-body-support .btn.r,
+.student-body-support .calendar-day,
+.student-body-support .calendar-time {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tx);
+  text-align: center;
+}
+.student-body-support .support-grid .opt b { font-size: 13px; }
+.student-body-support .btn.r {
+  background: var(--g);
+  border: 0;
+  color: #fff;
+}
+.student-body-support button.support-action {
+  background: var(--g);
+  border: 0;
+  color: #fff;
+}
+.support-category-icon { display: block; width: 42px; height: 42px; object-fit: contain; filter: brightness(0); }
 .booking-date-picker { max-width: 420px; margin: 12px auto; padding: 12px; border: 1px solid var(--ln); border-radius: 12px; background: #fff; }
 .calendar-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--g); }
 .calendar-month-button { width: 32px; height: 30px; border-radius: 7px; background: #DCEAE4; color: var(--g); font-size: 20px; line-height: 1; }
@@ -260,6 +300,9 @@ textarea { width: 100%; border: 1.5px solid var(--ln); border-radius: 10px; padd
 }
 .hero { background: none; color: #1a1a1a; border-radius: 14px; padding: 16px; margin-bottom: 12px }   /* green welcome banner at the top of Home and Profile (their text colours are already set for a dark green background) */
 .prof-me{ background:#3f8f84; width: 50px; height: 50px; border-radius: 14px; padding: 16px; margin-bottom: 12px }
+.profile-identity { justify-content: center; text-align: center; }
+.profile-identity-copy { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; min-width: 0; }
+.profile-identity-copy .small { color: #14312d; }
 .profile-call-button { display: flex; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; }
 .profile-call-icon { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; background: var(--g2); }
 .profile-call-icon img { display: block; width: 21px; height: 21px; object-fit: contain; filter: brightness(0) invert(1); }
@@ -303,7 +346,7 @@ textarea { width: 100%; border: 1.5px solid var(--ln); border-radius: 10px; padd
 .sos-foot { margin: 10px 0 }
 
 /* ---------- 9. BOTTOM TABS (students) + SIDE MENU (counsellors) ---------- */
-.nav { display: flex; border-top: 1px solid var(--ln); background: #fff; position: fixed; left: 0; bottom: 0; width: 100%; z-index: 8; box-shadow: 0 -2px 10px rgba(0,0,0,.05); }
+.nav { display: flex; border-top: 1px solid var(--ln); background: #fff; position: fixed; left: 0; bottom: 0; width: 100%; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 8; box-shadow: 0 -2px 10px rgba(0,0,0,.05); }
 .nav button { flex: 1; padding: 9px 0 12px; background: none; font-size: 11px; color: var(--mu) }   /* each tab */
 .nav button.on { color: var(--g); font-weight: 700 }   /* the current tab */
 .nav span { display: block; font-size: 19px }          /* the emoji icon above the label */
@@ -321,9 +364,13 @@ textarea { width: 100%; border: 1.5px solid var(--ln); border-radius: 10px; padd
 @media (prefers-reduced-motion: reduce) { .breathe { transition: none } }   /* no animation for people who turn motion off */
 .cal { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; text-align: center; font-size: 11px }   /* calendar: 7 columns */
 .cal div { padding: 8px 0; border-radius: 8px; background: #e8f3f1 }
+.cal .empty { background: transparent }
 .cal .b { background: var(--t); color: #fff }   /* booked day */
 .cal .f { background: #ddd; color: #999 }       /* full day */
 .cal .h { background: none; color: var(--mu) }  /* heading cell */
+.calendar-month-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px }
+.calendar-month-heading button { background: #e8f3f1; color: var(--g); border-radius: 8px; padding: 6px 12px }
+.calendar-month-heading button:disabled { opacity: .4; cursor: default }
 canvas { background: #0e2b26; border-radius: 10px; width: 100%; image-rendering: pixelated }   /* the mini-game board */
 .seg { display: none }   /* old segmented control: hidden. Delete if no page uses it */
 
@@ -332,6 +379,7 @@ canvas { background: #0e2b26; border-radius: 10px; width: 100%; image-rendering:
 .front-btn { width: 100%; padding: clamp(18px,3vw,23px); background: #2a6b62; color: #fff; font-family: 'Inter', sans-serif; font-size: clamp(16px,7vw,18px); font-weight: 900; border: none; border-radius: 999px; cursor: pointer; margin-bottom: clamp(16px,5vw,24px); letter-spacing: .01em; touch-action: manipulation; align-self: center }
 .front-btn:hover { background: #3f8f84 }
 .logo { width: 120px; height: 120px; border-radius: 60%; object-fit: cover }
+body > div.logo { width: 100%; height: auto; border-radius: 0 }
 .wordmark_name { font-size: 30px; font-weight: 700; color: #1a1a1a; letter-spacing: -.3px; margin-bottom: 4px }
 .wordmark_sub { font-size: 13.5px; color:  #2b4e49; font-weight: 400; margin-bottom: 36px }
 .headline { font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.3; margin-bottom: 10px; letter-spacing: -.2px }
@@ -342,3 +390,28 @@ canvas { background: #0e2b26; border-radius: 10px; width: 100%; image-rendering:
 .blob--peach { position: fixed; width: 320px; height: 320px; background: #8a9e9b; bottom: 2%; left: -130px; border-radius: 50%; filter: blur(70px) }
 .landing { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 100vh }   /* full-screen centred block of index.html. (Renamed from .hero so it no longer stretches the small banners on Home and Profile) */
 .logo, .landing h1, .landing p, .landing a { position: relative; z-index: 1 }
+
+@media (min-width: 1200px) {
+  body { margin: 0; background: var(--stage) }
+  .phone, body > div.logo, .landing {
+    width: min(calc(100% - 64px), 1120px);
+    margin-inline: auto;
+  }
+  .phone { background: transparent }
+  body > div.logo {
+    display: flex;
+    align-items: center;
+    height: 104px;
+    padding: 8px 40px;
+    background: transparent;
+  }
+  body > div.logo .app-logo { width: 88px; height: 88px; object-fit: contain }
+  .body { padding: 24px 40px 110px }
+  .nav {
+    width: 100%;
+    left: 0;
+    transform: none;
+  }
+  .btn-sos { right: max(46px, calc((100vw - 1120px) / 2 + 14px)) }
+  .back-btn { left: max(42px, calc((100vw - 1120px) / 2 + 10px)) }
+}

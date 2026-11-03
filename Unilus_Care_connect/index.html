@@ -13,11 +13,6 @@
 </head>
 <body><!-- start of the visible page -->
 
-  <button class="btn-sos" id="sos" type="button"><!-- THE EMERGENCY BUTTON. styles.css pins it top-right of the window. id "sos" is what the script below attaches the popup to -->
-    <img src="icons8-phone-50.png" alt="" class="sos-img" ><!-- phone icon. FIX: if the picture file is missing, an emoji is shown instead, so the emergency button never looks blank -->
-    <span>Emergency hotline</span><!-- label. FIX: same words as the popup and the other pages (was "Crisis Line"). On phones styles.css hides the label and shows only the round icon -->
-  </button>
-
   <section class="landing"><!-- FIX: was class "hero". Home.html and profile.html use "hero" for a small green banner, so the full-screen centred block now has its own name -->
     <div class="blob blob--teal" aria-hidden="true"></div><!-- soft peach glow in the top-right corner (decoration only) -->
     <div class="blob blob--peach" aria-hidden="true"></div><!-- soft grey-green glow in the bottom-left corner (decoration only) -->
@@ -26,19 +21,18 @@
     <p class="wordmark_sub">UNILUS Student Wellness</p><!-- smaller line under it -->
     <h1 class="headline">Your wellbeing <br> matters</h1><!-- main message; <br> = line break -->
     <p class="pillars">Private &bull; Simple &bull; Safe</p><!-- three promises separated by dots (&bull;) -->
-    <a href="login.html"><button class="front-btn" type="button">Get Started</button></a><!-- goes to the login page (login.html must sit next to this file) -->
-    <p class="bottom_word">No app download required</p><!-- small line at the bottom -->
+    <a href="login.html"><button class="front-btn" type="button">Get Started</button></a>
   </section>
 
-  <div class="modal" id="md"><div class="card" id="mdc"></div></div><!-- the popup box. Same ids as the ones core.js builds on other pages, so modal() and close_() work here unchanged. Hidden until the SOS button is tapped -->
+  <div class="modal" id="md"><div class="card" id="mdc"></div></div><!-- shared modal container used by core.js -->
   <div class="toast" id="ts"></div><!-- small message bar (core.js toast() writes into it) -->
 
   <script src="Frontend_Material/Shared/core.js"></script><!-- FIX: relative path. Gives this page $, S, modal(), close_() and CC.closeAll(). Must load first -->
-  <script src="Frontend_Material/Shared/emergency_hotline.js"></script><!-- gives sosBody(): the red popup with the "Call ... now" button. It also fetches the hotline number -->
+  <script src="Frontend_Material/Shared/care_data.js"></script>
+  <script src="Frontend_Material/Shared/emergency_session.js"></script>
   <!-- care_data.js, install_app.js and password_tools.js are not needed on this page, so they are not loaded (faster on mobile data). FIX: the old password_tools.js line had a stray \" and could never load -->
   <script>
     S.noClose=false;                                                                              // a popup left open when the tab was closed must not stay stuck
-    $('sos').onclick=()=>modal(sosBody()+'<button class="btn o" onclick="close_()">Close</button>');   // SOS tapped: show the emergency popup (same one as every other page) plus a Close button
     $('md').onclick=e=>{if(e.target.id==='md'&&!S.noClose)CC.closeAll()};                         // tapping the dark area around the popup closes it
     if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});   // same as login.html: lets pages you have opened work offline and lets the app be installed. manifest.json starts the installed app on this page, so it must register here too
   </script>

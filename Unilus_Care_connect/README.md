@@ -33,7 +33,8 @@ Unilus_Care_connect/
         ├── wellness_tools.js        Breathe, Finch, Snake Xenzia
         ├── learning_game.js         20-section game, video list
         ├── masked_call.js           masked call screen with duration log
-        └── api.js                   client for the Spring Boot backend (not used by the demo yet)
+        ├── api.js                   client for the Spring Boot backend
+        └── report_pdf.js            downloads anonymised admin report data as a PDF
 ```
 
 ## Run it
@@ -48,4 +49,4 @@ Everything is stored in this browser (`localStorage`, key `careconnect_demo_v1`)
 Demo logins: counsellor `m.lungu@unilus.edu.zm` / `Temp1234`, admin `admin@unilus.edu.zm` / `Admin1234` (both must set a new password at first login). Students create their own account.
 
 ## Connecting to the backend
-Replace the demo logic with calls from `Shared/api.js` (login, register, book, check-in, triage, stats and so on). Remove the demo accounts and the plain-text password storage when you do. Set the real emergency number with the backend `HOTLINE` setting.
+The administrator weekly stats and anonymised PDF export use `API.stats()` and `API.reportCsv()` from `Shared/api.js`. Other screens still use the local demo state. Connect backend authentication and the remaining screen flows before deployment; remove the demo accounts and plain-text password storage, and set the real emergency number with the backend `HOTLINE` setting.

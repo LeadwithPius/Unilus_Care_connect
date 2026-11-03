@@ -8,15 +8,10 @@
    <button class="back-btn" id="back" type="button">
     <img src="Vector_Back_Icon__Back_Icons__Arrow__Back_PNG_and_Vector_with_Transparent_Background_for_Free_Download-removebg-preview.png" alt="back">
   </button>
-   <button class="btn-sos" id="sos" type="button"><!-- THE EMERGENCY BUTTON. styles.css pins it top-right of the window. id "sos" is what the script below attaches the popup to -->
-    <img src="icons8-phone-50.png" alt="" class="sos-img" ><!-- phone icon. FIX: if the picture file is missing, an emoji is shown instead, so the emergency button never looks blank -->
-    <span>Emergency hotline</span><!-- label. FIX: same words as the popup and the other pages (was "Crisis Line"). On phones styles.css hides the label and shows only the round icon -->
-  </button>
 <div id="app"></div><!-- empty box. core.js fills it with the form, popups and the emergency button. The id "app" is what core.js looks for. No frame: it has no border, no fixed width and no height limit -->
 <noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript><!-- shown only when JavaScript is switched off -->
 <script src="Frontend_Material/Shared/core.js"></script><!-- FIX: path. Must load FIRST: defines S (saved data), save(), toast(), modal(), render(), ROUTES and CC.mount() -->
 <script src="Frontend_Material/Shared/care_data.js"></script><!-- counsellor list, time slots, topics (not used by this page, but every page loads it) -->
-<script src="Frontend_Material/Shared/emergency_hotline.js"></script><!-- defines sosBody(): the red emergency popup that core.js opens -->
 <script src="Frontend_Material/Shared/install_app.js"></script><!-- defines installApp(): the "Download app" button action -->
 <script src="Frontend_Material/Shared/password_tools.js"></script><!-- defines pwOk(), PWMSG, mkCodes(), inp(), lab(), showCodes(), forceChange() -->
 <script>
@@ -162,9 +157,5 @@ else{                                                                           
   after(){bindLogin();$('rst').onclick=e=>{e.preventDefault();resetDemo()}}});  // after each draw: connect the buttons; the demo link wipes all saved demo data and reloads
  if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});   // lets the app work offline, only on https or localhost; a missing sw.js is ignored
 }
-S.noClose=false;                                                                              // a popup left open when the tab was closed must not stay stuck
-    $('sos').onclick=()=>modal(sosBody()+'<button class="btn o" onclick="close_()">Close</button>');   // SOS tapped: show the emergency popup (same one as every other page) plus a Close button
-    $('md').onclick=e=>{if(e.target.id==='md'&&!S.noClose)CC.closeAll()};                         // tapping the dark area around the popup closes it
-    if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});   // same as login.html: lets pages you have opened work offline and lets the app be installed. manifest.json starts the installed app on this page, so it must register here too
 document.getElementById('back').onclick=()=>{if(S.lm&&S.lm!=='in'){goLoginBack();return}history.length>1?history.back():null};
 </script></body></html><!-- end of this page's code / end of the visible page / end of the document -->
