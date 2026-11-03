@@ -11,7 +11,7 @@ import './AdminWorkspace.css'
 
 const sections = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'students', label: 'Students', icon: GraduationCap },
+  { id: 'students', label: 'Students', icon: GraduationCap },\n  { id: 'appointments', label: 'Appointments', icon: CalendarDays },
   { id: 'counsellors', label: 'Counsellors', icon: Users },
   { id: 'education', label: 'Education Hub', icon: BookOpen },
   { id: 'consent', label: 'Consent & policies', icon: ShieldCheck },
@@ -54,7 +54,7 @@ function AdminWorkspace() {
   const [section, setSection] = useState('overview')
   const [account, setAccount] = useState(null)
   const [overview, setOverview] = useState(null)
-  const [students, setStudents] = useState([])
+  const [students, setStudents] = useState([])\n  const [appointments, setAppointments] = useState([])
   const [counsellors, setCounsellors] = useState([])
   const [resources, setResources] = useState([])
   const [consentDocuments, setConsentDocuments] = useState([])
@@ -77,7 +77,7 @@ function AdminWorkspace() {
   const loadAll = useCallback(async () => {
     setError('')
     try {
-      const [me, dashboard, studentRows, counsellorRows, resourceRows, consentRows] = await Promise.all([
+      const [me, dashboard, studentRows, counsellorRows, appointmentRows, resourceRows, consentRows] = await Promise.all([
         api.me(),
         api.adminOverview(),
         api.adminStudents(),
@@ -288,6 +288,14 @@ function AdminWorkspace() {
           <div className="admin-table-wrap"><table><thead><tr><th>STUDENT</th><th>STUDENT NUMBER</th><th>REGISTERED</th><th>APPOINTMENTS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
             {filteredStudents.map(person => <tr key={person.userId}><td><strong>{person.fullName}</strong><small>{person.email}</small></td><td>{person.studentNumber}</td><td>{dateLabel(person.registeredAt)}</td><td>{person.appointmentCount}</td><td><StatusPill enabled={person.enabled} /></td><td><button className="admin-row-action" type="button" disabled={busy === person.userId} onClick={() => changeAccountStatus('student', person)}>{busy === person.userId ? 'Saving…' : person.enabled ? 'Disable' : 'Enable'}</button></td></tr>)}
           </tbody></table>{!filteredStudents.length && <div className="admin-empty">No student accounts match your search.</div>}</div>
+        </section>}
+
+        {section === 'appointments' && <section className="admin-panel admin-table-panel">
+          <div className="admin-panel-heading"><div><span>OPERATIONAL OVERSIGHT</span><h2>Appointment activity</h2></div><span className="admin-count">Latest {appointments.length} records</span></div>
+          <div className="admin-privacy-note"><ShieldCheck size={18} /><p>This view contains scheduling and status information only. It does not expose student identities, counselling conversations or clinical notes.</p></div>
+          <div className="admin-table-wrap"><table><thead><tr><th>BOOKING REF</th><th>SCHEDULED</th><th>COUNSELLOR</th><th>SUPPORT CATEGORY</th><th>MODE</th><th>STATUS</th></tr></thead><tbody>
+            {appointments.map(item => <tr key={item.appointmentId}><td><strong>#{String(item.appointmentId).slice(0, 8).toUpperCase()}</strong><small>Created {dateLabel(item.createdAt)}</small></td><td>{dateLabel(item.scheduledStart)}<small>{item.scheduledStart ? new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(item.scheduledStart)) : '—'} – {item.scheduledEnd ? new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(item.scheduledEnd)) : '—'}</small></td><td>{item.counsellorName}</td><td>{item.supportCategory}</td><td>{String(item.counsellingMode).replaceAll('_', ' ')}</td><td><span className={`admin-status ${['COMPLETED', 'CONFIRMED'].includes(item.status) ? 'is-enabled' : 'is-disabled'}`}>{String(item.status).replaceAll('_', ' ')}</span></td></tr>)}
+          </tbody></table>{!appointments.length && <div className="admin-empty">No appointments have been recorded yet.</div>}</div>
         </section>}
 
         {section === 'counsellors' && <section className="admin-panel admin-table-panel">
