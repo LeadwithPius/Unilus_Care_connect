@@ -17,6 +17,7 @@
 <script src="../../Frontend_Material/Shared/masked_call.js"></script>
 <script>
 // Me: profile, upcoming session (check-in/out, call, reschedule), wellbeing check-in.
+document.body.classList.add('care-page','care-profile-page');
 function view(){
  const hi=S.hist.length?S.hist.map(h=>`<div class="row"><span>Check-in ${h.i}</span><b>${h.s}/27</b></div>`).join(''):'<div class="small">No check-ins yet.</div>';
  const followupAvailable=S.booked&&S.bookingStatus==='approved'&&(S.mode==='Face-to-Face'?!!S.cout:S.mode==='Voice Call'&&S.callCompleted);
