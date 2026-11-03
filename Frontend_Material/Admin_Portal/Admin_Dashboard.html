@@ -1,81 +1,80 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>UNILUS CareConnect · Administrator</title>
-<link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
-<link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
-<link href="https://fonts.googleapis.com/css2?family=Gloock&display=swap" rel="stylesheet">
-</head><body>
-<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
-<div class="phone" id="phone"></div>
-<script src="../../Frontend_Material/Shared/api.js"></script>
-<script src="../../Frontend_Material/Shared/core.js"></script>
-<script src="../../Frontend_Material/Shared/care_data.js"></script>
-<script src="../../Frontend_Material/Shared/password_tools.js"></script>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UNILUS CareConnect · Administrator</title>
+  <link rel="manifest" href="../../manifest.json">
+  <meta name="theme-color" content="#134f47">
+  <link rel="stylesheet" href="../../Frontend_Material/Shared/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Gloock&display=swap" rel="stylesheet">
+</head>
+<body>
+  <noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Enable JavaScript to use this portal.</p></noscript>
+  <div class="phone" id="phone"></div>
+  <script src="../../Frontend_Material/Shared/api.js"></script>
+  <script src="../../Frontend_Material/Shared/core.js"></script>
+  <script>
+    function view() {
+      return `<h2>Administrator</h2>
+        <div class="card">
+          <h3>Create counsellor account</h3>
+          <p class="small">Create a real account in CareConnect. Set a temporary password of at least 12 characters and share it with the counsellor through a secure channel.</p>
+          <label class="small" for="counsellor-name">Full name</label>
+          <input class="fld" id="counsellor-name" autocomplete="name" placeholder="Counsellor full name">
+          <label class="small" for="counsellor-email">UNILUS email</label>
+          <input class="fld" id="counsellor-email" type="email" autocomplete="email" placeholder="name@unilus.ac.zm">
+          <label class="small" for="counsellor-title">Professional title (optional)</label>
+          <input class="fld" id="counsellor-title" placeholder="e.g. Counselling Psychologist">
+          <label class="small" for="counsellor-password">Temporary password</label>
+          <input class="fld" id="counsellor-password" type="password" autocomplete="new-password" placeholder="12 to 72 characters">
+          <button class="btn" type="button" data-a="create-counsellor">Create counsellor</button>
+        </div>
+        <div class="card">
+          <h3>Account management and reports</h3>
+          <p class="small">Counsellor listing, activation/deactivation, deletion and anonymised reporting are not yet exposed by the backend. These features are intentionally not simulated or populated with demo records.</p>
+        </div>
+        <button class="btn o" type="button" data-a="logout">Log out</button>`;
+    }
 
-<script>
-// Administrator: counsellor accounts (add, activate/deactivate, reset password) and anonymised stats.
-let weeklyStatsState='loading',weeklyStatsData=null,weeklyStatsRequested=false;
-const privateStatField=/^(?:(?:student|user|account|appointment|counsell?or|full)?(?:name|email|phone|mobile|id|tag|number)|address|dob|dateofbirth)$/i;
-function escapeStatHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
-function weeklyStatRecords(data){
- let value=data;
- for(const key of ['weeklyStats','weekly','groups','breakdown','byCampusFacultyYear','data','stats']){
-  if(value&&!Array.isArray(value)&&typeof value==='object'&&value[key]!==undefined){value=value[key];break}
- }
- if(Array.isArray(value)){
-  if(Array.isArray(value[0])){
-   const headers=value[0].map(String);
-   return value.slice(1).map(row=>Object.fromEntries(headers.map((header,index)=>[header,row[index]])));
-  }
-  return value.filter(row=>row&&typeof row==='object'&&!Array.isArray(row));
- }
- if(value&&typeof value==='object')return [value];
- return [];
-}
-function renderWeeklyStats(){
- if(weeklyStatsState==='loading')return '<div class="small">Loading live weekly stats…</div>';
- if(weeklyStatsState==='error')return '<div class="small">Weekly stats could not be loaded from the backend. Please try again.</div><button class="btn o" data-a="reload-stats">Retry</button>';
- const records=weeklyStatRecords(weeklyStatsData);
- if(!records.length)return '<div class="small">No weekly stats are available yet.</div>';
- const rows=records.map(record=>{
-  const fields=Object.entries(record).filter(([key,value])=>!privateStatField.test(key.replace(/[^a-z0-9]/gi,''))&&(typeof value==='string'||typeof value==='number'||typeof value==='boolean'));
-  if(!fields.length)return '';
-  const countField=fields.find(([key])=>/^(n|count|studentcount|students|total|totalstudents|records|casecount|sessioncount)$/i.test(key.replace(/[^a-z0-9]/gi,'')));
-  const count=countField?Number(countField[1]):NaN;
-  const details=fields.filter(([key])=>key!==countField?.[0]).map(([key,value])=>`${escapeStatHtml(key)}: ${escapeStatHtml(value)}`).join(' · ');
-  const countLabel=Number.isFinite(count)?count<5?'Hidden (n<5)':`${count} students`:'';
-  return `<div class="row"><span>${details||'Weekly total'}</span>${countLabel?`<b>${countLabel}</b>`:''}</div>`;
- }).join('');
- return rows||'<div class="small">No anonymised weekly group data is available.</div>';
-}
-function loadWeeklyStats(){
- weeklyStatsRequested=true;weeklyStatsState='loading';render();
- API.stats().then(data=>{weeklyStatsData=data;weeklyStatsState='loaded';render()}).catch(error=>{weeklyStatsState='error';console.error('Could not load weekly admin stats:',error);render()});
-}
-function view(){return `<h2>Administrator</h2>
-<div class="card"><h3>Create counsellor account</h3>
-<p class="small">This form creates a real counsellor account in the CareConnect backend. Use a temporary password of at least 12 characters and share it securely with the counsellor.</p>
-<label class="small" for="an">Full name</label><input class="fld" id="an" placeholder="Counsellor full name">
-<label class="small" for="ae">UNILUS email</label><input class="fld" id="ae" type="email" placeholder="name@unilus.ac.zm">
-<label class="small" for="at">Professional title</label><input class="fld" id="at" placeholder="e.g. Counselling Psychologist">
-<label class="small" for="ap">Temporary password</label><input class="fld" id="ap" type="password" autocomplete="new-password" placeholder="At least 12 characters">
-<button class="btn" data-a="addc">Create counsellor</button></div>
-<div class="card"><h3>Account management</h3><p class="small">The backend does not yet expose counsellor listing, activation, deactivation or deletion endpoints. These controls are intentionally not simulated in the browser.</p></div>
-<div class="card"><h3>Reports</h3><p class="small">Anonymised counsellor reporting is not yet connected to a backend reporting endpoint. No demo statistics are displayed as real data.</p></div>
-<button class="btn o" data-a="logout">Log out</button>`;}
-function act(a){
- if(a==='addc'){
-  const displayName=$('an').value.trim(),email=$('ae').value.trim().toLowerCase(),professionalTitle=$('at').value.trim(),password=$('ap').value;
-  if(!displayName||!email||!password)return toast('Complete the name, email and temporary password fields.');
-  if(password.length<12||password.length>72)return toast('Temporary password must contain 12 to 72 characters.');
-  if(!/^[^@\\s]+@(?:[a-z0-9-]+\\.)*unilus\\.ac\\.zm$/i.test(email))return toast('Use a valid UNILUS email address.');
-  const button=document.querySelector('[data-a="addc"]');button.disabled=true;
-  API.createCounsellor({email,password,displayName,professionalTitle,biography:''})
-   .then(()=>{toast('Counsellor account created successfully. Share the temporary password securely.');$('an').value='';$('ae').value='';$('at').value='';$('ap').value='';})
-   .catch(error=>toast(error.message||'Could not create the counsellor account.'))
-   .finally(()=>{if(button.isConnected)button.disabled=false;});
- }
-}
-CC.mount({role:'a',title:'Administrator',root:'../../',view,act});
-</script></body></html>
+    async function act(action) {
+      if (action !== 'create-counsellor') return;
+
+      const displayName = document.getElementById('counsellor-name').value.trim();
+      const email = document.getElementById('counsellor-email').value.trim().toLowerCase();
+      const professionalTitle = document.getElementById('counsellor-title').value.trim();
+      const password = document.getElementById('counsellor-password').value;
+
+      if (!displayName || !email || !password) {
+        toast('Enter the counsellor name, email and temporary password.');
+        return;
+      }
+      if (!/^[^@\\s]+@(?:[a-z0-9-]+\\.)*unilus\\.ac\\.zm$/i.test(email)) {
+        toast('Use a valid UNILUS email address.');
+        return;
+      }
+      if (password.length < 12 || password.length > 72) {
+        toast('The temporary password must contain 12 to 72 characters.');
+        return;
+      }
+
+      const button = document.querySelector('[data-a="create-counsellor"]');
+      button.disabled = true;
+      try {
+        await API.createCounsellor({ email, password, displayName, professionalTitle, biography: '' });
+        document.getElementById('counsellor-name').value = '';
+        document.getElementById('counsellor-email').value = '';
+        document.getElementById('counsellor-title').value = '';
+        document.getElementById('counsellor-password').value = '';
+        toast('Counsellor account created. Share the temporary password securely.');
+      } catch (error) {
+        toast(error.message || 'Could not create the counsellor account.');
+      } finally {
+        if (button.isConnected) button.disabled = false;
+      }
+    }
+
+    CC.mount({ role: 'a', title: 'Administrator', root: '../../', view, act });
+  </script>
+</body>
+</html>
