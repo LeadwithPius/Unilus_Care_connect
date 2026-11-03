@@ -36,7 +36,7 @@ import {
   ForgotPasswordPage,
   ResetPasswordPage,
   VerifyEmailPage,
-  AdminPortal,
+
 } from './AuthPages.jsx'
 
 
