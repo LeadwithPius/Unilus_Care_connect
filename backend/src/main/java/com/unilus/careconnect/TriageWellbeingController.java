@@ -81,10 +81,10 @@ public class TriageWellbeingController {
         }
     }
 
-    @GetMapping("/counsellor/students/{studentProfileId}/progress")
-    public ResponseEntity<?> counsellorProgress(Authentication auth, @PathVariable UUID studentProfileId) {
+    @GetMapping("/counsellor/appointments/{appointmentId}/progress")
+    public ResponseEntity<?> counsellorProgress(Authentication auth, @PathVariable UUID appointmentId) {
         try {
-            return ResponseEntity.ok(service.counsellorCheckIns(auth.getName(), studentProfileId));
+            return ResponseEntity.ok(service.counsellorCheckIns(auth.getName(), appointmentId));
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
         } catch (IllegalStateException e) {
