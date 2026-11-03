@@ -1,4 +1,6 @@
 import { useState } from 'react'
+
+const CURRENT_YEAR = new Date().getFullYear()
 import { motion, AnimatePresence } from 'motion/react'
 import {
   ArrowRight,
@@ -8,7 +10,6 @@ import {
   X,
   ShieldCheck,
   BookOpen,
-  CalendarDays,
   MessageCircleHeart,
   Wind,
   Activity,
@@ -460,7 +461,7 @@ function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} CareConnect</span>
+        <span>© {CURRENT_YEAR} CareConnect</span>
         <span>University of Lusaka</span>
       </div>
     </footer>

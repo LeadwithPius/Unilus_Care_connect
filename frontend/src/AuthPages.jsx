@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+const CURRENT_YEAR = new Date().getFullYear()
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import {
@@ -21,6 +23,23 @@ const roles = [
   { value: 'COUNSELLOR', label: 'Counsellor' },
   { value: 'ADMIN', label: 'Administrator' },
 ]
+
+// Verification tokens are single-use. Reuse an in-flight request when React
+// Strict Mode replays an effect during development.
+const emailVerificationRequests = new Map()
+
+function verifyEmailOnce(token) {
+  if (!emailVerificationRequests.has(token)) {
+    const request = api.verifyEmail(token).catch((error) => {
+      emailVerificationRequests.delete(token)
+      throw error
+    })
+
+    emailVerificationRequests.set(token, request)
+  }
+
+  return emailVerificationRequests.get(token)
+}
 
 function AuthShell({ children, heading, description }) {
   return (
@@ -84,7 +103,7 @@ function AuthShell({ children, heading, description }) {
       </div>
 
       <footer className="auth-footer">
-        <span>© {new Date().getFullYear()} CareConnect</span>
+        <span>© {CURRENT_YEAR} CareConnect</span>
         <span>University of Lusaka</span>
       </footer>
     </main>
@@ -206,8 +225,7 @@ function LoginPage() {
     >
       {searchParams.get('registered') === '1' && (
         <FormMessage type="success">
-          Your account has been created. Check your university email
-          for verification instructions before logging in.
+          Your account has been created. You can now sign in with your UNILUS account.
         </FormMessage>
       )}
 
@@ -564,9 +582,10 @@ function VerifyEmailPage() {
 
   const [status, setStatus] = useState('loading')
   const [message, setMessage] = useState('Verifying your email address...')
+  const active = useRef(true)
 
   useEffect(() => {
-    let active = true
+    active.current = true
 
     async function verify() {
       if (!token) {
@@ -576,14 +595,14 @@ function VerifyEmailPage() {
       }
 
       try {
-        const result = await api.verifyEmail(token)
+        const result = await verifyEmailOnce(token)
 
-        if (active) {
+        if (active.current) {
           setStatus('success')
           setMessage(result?.message || 'Your email address has been verified.')
         }
       } catch (err) {
-        if (active) {
+        if (active.current) {
           setStatus('error')
           setMessage(err.message || 'Email verification failed.')
         }
@@ -593,9 +612,9 @@ function VerifyEmailPage() {
     verify()
 
     return () => {
-      active = false
+      active.current = false
     }
-  })
+  }, [token])
 
   return (
     <AuthShell
@@ -627,9 +646,10 @@ function PortalPage({ expectedRole, title, description }) {
   const navigate = useNavigate()
   const [status, setStatus] = useState('loading')
   const [email, setEmail] = useState('')
+  const active = useRef(true)
 
   useEffect(() => {
-    let active = true
+    active.current = true
 
     async function verifySession() {
       if (!api.token) {
@@ -639,6 +659,11 @@ function PortalPage({ expectedRole, title, description }) {
 
       try {
         const account = await api.me()
+
+        if (!active.current) {
+          return
+        }
+
         const accountRoles = (account.roles || []).map((item) =>
           String(item).replace(/^ROLE_/, '').toUpperCase()
         )
@@ -654,17 +679,19 @@ function PortalPage({ expectedRole, title, description }) {
           setStatus('ready')
         }
       } catch {
-        api.logout()
-        navigate('/login', { replace: true })
+        if (active) {
+          api.logout()
+          navigate('/login', { replace: true })
+        }
       }
     }
 
     verifySession()
 
     return () => {
-      active = false
+      active.current = false
     }
-  })
+  }, [expectedRole, navigate])
 
   function handleLogout() {
     api.logout()
