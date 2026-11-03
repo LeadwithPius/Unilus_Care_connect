@@ -76,6 +76,15 @@ public class CounsellorAvailabilityService {
                     WHERE counsellor_profile_id = ?
                       AND status = 'OPEN'
                       AND starts_at > CURRENT_TIMESTAMP
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM wellness.appointments booked
+                          WHERE booked.availability_slot_id = wellness.availability_slots.id
+                            AND booked.status IN (
+                                'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                'COMPLETED', 'NO_SHOW'
+                            )
+                      )
                     ORDER BY starts_at
                     """;
         } else {
