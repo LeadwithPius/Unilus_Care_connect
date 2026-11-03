@@ -35,6 +35,7 @@ public class CounsellorDirectoryService {
                         JOIN credentials.users u
                             ON u.id = cp.user_id
                         WHERE u.enabled = TRUE
+                          AND cp.accepting_appointments = TRUE
                         ORDER BY cp.display_name
                         """,
                         (rs, rowNum) ->
