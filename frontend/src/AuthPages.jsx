@@ -28,7 +28,12 @@ const emailVerificationRequests = new Map()
 
 function verifyEmailOnce(token) {
   if (!emailVerificationRequests.has(token)) {
-    emailVerificationRequests.set(token, api.verifyEmail(token))
+    const request = api.verifyEmail(token).catch((error) => {
+      emailVerificationRequests.delete(token)
+      throw error
+    })
+
+    emailVerificationRequests.set(token, request)
   }
 
   return emailVerificationRequests.get(token)
@@ -650,6 +655,11 @@ function PortalPage({ expectedRole, title, description }) {
 
       try {
         const account = await api.me()
+
+        if (!active) {
+          return
+        }
+
         const accountRoles = (account.roles || []).map((item) =>
           String(item).replace(/^ROLE_/, '').toUpperCase()
         )
