@@ -22,6 +22,18 @@ const roles = [
   { value: 'ADMIN', label: 'Administrator' },
 ]
 
+// Verification tokens are single-use. Reuse an in-flight request when React
+// Strict Mode replays an effect during development.
+const emailVerificationRequests = new Map()
+
+function verifyEmailOnce(token) {
+  if (!emailVerificationRequests.has(token)) {
+    emailVerificationRequests.set(token, api.verifyEmail(token))
+  }
+
+  return emailVerificationRequests.get(token)
+}
+
 function AuthShell({ children, heading, description }) {
   return (
     <main className="auth-page">
@@ -206,8 +218,7 @@ function LoginPage() {
     >
       {searchParams.get('registered') === '1' && (
         <FormMessage type="success">
-          Your account has been created. Check your university email
-          for verification instructions before logging in.
+          Your account has been created. You can now sign in with your UNILUS account.
         </FormMessage>
       )}
 
@@ -576,7 +587,7 @@ function VerifyEmailPage() {
       }
 
       try {
-        const result = await api.verifyEmail(token)
+        const result = await verifyEmailOnce(token)
 
         if (active) {
           setStatus('success')
@@ -595,7 +606,7 @@ function VerifyEmailPage() {
     return () => {
       active = false
     }
-  })
+  }, [token])
 
   return (
     <AuthShell
@@ -654,8 +665,10 @@ function PortalPage({ expectedRole, title, description }) {
           setStatus('ready')
         }
       } catch {
-        api.logout()
-        navigate('/login', { replace: true })
+        if (active) {
+          api.logout()
+          navigate('/login', { replace: true })
+        }
       }
     }
 
@@ -664,7 +677,7 @@ function PortalPage({ expectedRole, title, description }) {
     return () => {
       active = false
     }
-  })
+  }, [expectedRole, navigate])
 
   function handleLogout() {
     api.logout()
