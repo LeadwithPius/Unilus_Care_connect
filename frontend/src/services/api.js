@@ -220,6 +220,10 @@ export const api = {
     return request('GET', '/appointments/categories')
   },
 
+  platformConsentStatus() {
+    return request('GET', '/consents/status?purposeCode=PLATFORM_ACCESS')
+  },
+
   currentCounsellingConsent() {
     return request('GET', '/consents/current?purposeCode=COUNSELLING')
   },
