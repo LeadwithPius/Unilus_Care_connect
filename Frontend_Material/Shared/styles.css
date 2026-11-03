@@ -498,3 +498,86 @@ body > div.logo { width: 100%; height: auto; border-radius: 0 }
  .care-support-page .support-action { width:100%; }
  .care-page .body { padding-top:20px; }
 }
+
+
+/* Unified CareConnect workspace design for counsellor and administrator portals */
+.care-workspace { background:#f5f7f4; color:#24352e; }
+.care-workspace .phone { width:min(100%,1280px); margin-inline:auto; min-height:100vh; }
+.care-workspace .body { width:100%; max-width:1160px; margin:0 auto; padding:30px clamp(18px,3.2vw,42px) 54px; }
+.care-workspace .body > h1,
+.care-workspace .body > h2,
+.care-workspace .body > div:not(.card) > h1,
+.care-workspace .body > div:not(.card) > h2 {
+  color:#20352c; font:400 clamp(29px,3.5vw,39px)/1.15 Gloock,serif;
+  letter-spacing:-.02em; margin:0 0 22px; text-align:left;
+}
+.care-workspace .body h3 { color:#20352c; text-align:left; font-size:16px; line-height:1.35; margin:0 0 10px; }
+.care-workspace .small { color:#68776f; font-size:12px; line-height:1.65; }
+.care-workspace .card {
+  padding:22px; margin:0 0 18px; border:1px solid #e0e8e1; border-radius:18px;
+  background:#fff; color:#26352e; box-shadow:0 5px 18px rgba(22,53,41,.055);
+}
+.care-workspace .row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 0; border-bottom:1px solid #edf1ed; color:#31453b; }
+.care-workspace .row:last-child { border-bottom:0; }
+.care-workspace .btn {
+  min-height:44px; padding:11px 17px; border-radius:12px; background:#205c4d;
+  color:#fff; font-weight:700; letter-spacing:.01em;
+}
+.care-workspace .btn.o { background:#edf4ef; color:#205c4d; border:1px solid #dce8df; }
+.care-workspace .btn.r { background:#a94335; color:#fff; }
+.care-workspace .pill { border-radius:999px; padding:7px 12px; color:#fff; font-size:11px; font-weight:700; }
+.care-workspace input:not([type=checkbox]), .care-workspace textarea, .care-workspace select {
+  width:100%; min-height:44px; margin:6px 0 14px; padding:12px 14px;
+  border:1px solid #d7e2d9; border-radius:12px; background:#fff; color:#26352e; font:inherit;
+}
+.care-workspace label { display:block; color:#43564b; font-size:12px; font-weight:650; }
+.care-workspace button:disabled { opacity:.5; cursor:not-allowed; }
+.care-workspace :focus-visible { outline:3px solid rgba(55,118,100,.28); outline-offset:2px; }
+.care-workspace .top { min-height:12px; }
+.care-workspace .body .card > .btn { margin-top:12px; }
+
+/* Counsellor workspace navigation and dashboard */
+.care-counsellor-workspace .drawer {
+  background:#123f38; color:#fff; box-shadow:14px 0 38px rgba(16,43,35,.18);
+}
+.care-counsellor-workspace .drawer nav { padding:28px 18px; }
+.care-counsellor-workspace .drawer nav h3 { color:#fff!important; font:400 23px Gloock,serif; margin:0 0 22px!important; }
+.care-counsellor-workspace .drawer nav button {
+  display:block; width:100%; margin:5px 0; padding:13px 14px; border-radius:11px;
+  background:transparent; color:#e5f0e9; text-align:left; font-size:13px;
+}
+.care-counsellor-workspace .drawer nav button:hover,
+.care-counsellor-workspace .drawer nav button:focus-visible { background:#ffffff18; color:#fff; }
+.care-counsellor-workspace #hb { width:42px; height:42px; border-radius:12px; background:#eaf3ed!important; color:#205c4d!important; }
+.care-counsellor-workspace .body > div[style*="display:flex"] { align-items:center; }
+.care-counsellor-workspace .body .pill { display:inline-flex; align-items:center; justify-content:center; }
+.care-counsellor-workspace .body .cal {
+  display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:7px; text-align:center;
+}
+.care-counsellor-workspace .body .cal > div {
+  min-height:40px; display:grid; place-items:center; border-radius:10px;
+  background:#f5f7f4; color:#40554a; font-size:12px;
+}
+.care-counsellor-workspace .body .cal > .h { background:transparent; color:#68776f; font-weight:700; }
+.care-counsellor-workspace .body .cal > .b { background:#205c4d; color:#fff; font-weight:700; }
+.care-counsellor-workspace .calendar-month-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; color:#20352c; }
+.care-counsellor-workspace .calendar-month-heading button { width:36px; height:36px; border-radius:10px; background:#edf4ef; color:#205c4d; font-size:22px; }
+.care-counsellor-workspace .body .card[style*="background:#fbeeea"] { background:#fff7f4!important; border-color:#f0d8cf!important; }
+.care-counsellor-workspace .body .card[style*="background:#fbeeea"] h3 { color:#9b4334!important; }
+
+/* Administrator workspace */
+.care-admin-workspace .body { max-width:960px; }
+.care-admin-workspace .body > h2 { margin-bottom:24px; }
+.care-admin-workspace .body .card { padding:clamp(20px,3vw,30px); }
+.care-admin-workspace .body .card h3 { font:400 23px Gloock,serif; margin-bottom:10px; }
+.care-admin-workspace .body .card p { max-width:700px; margin:0 0 18px; }
+.care-admin-workspace .body .card .btn { min-width:190px; }
+.care-admin-workspace .body > .btn { min-width:150px; }
+@media(max-width:700px) {
+ .care-workspace .body { padding:22px 16px 38px; }
+ .care-workspace .card { padding:18px; border-radius:16px; }
+ .care-workspace .row { align-items:flex-start; }
+ .care-counsellor-workspace .body .cal { gap:4px; }
+ .care-counsellor-workspace .body .cal > div { min-height:35px; font-size:11px; }
+ .care-admin-workspace .body .card .btn { width:100%; }
+}
