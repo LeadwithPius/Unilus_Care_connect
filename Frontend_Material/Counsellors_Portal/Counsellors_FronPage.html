@@ -14,6 +14,7 @@
 <script src="../../Frontend_Material/Shared/emergency_session.js"></script>
 <script src="../../Frontend_Material/Shared/password_tools.js"></script>
 <script>
+    document.body.classList.add('care-workspace','care-counsellor-workspace');
 // Counsellor dashboard: availability, emergency control, priority triage queue, attendance log.
  function view(){const ownCounsellor=counsellorBookingIndex(),ownStatus=ownCounsellor>=0?cstat(ownCounsellor):null,ownsBooking=ownCounsellor>=0&&S.booked&&S.cns===CNS[ownCounsellor].n;return `<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><h2 style="margin:0">Welcome back, ${S.name}</h2></div>
  <div class="card"><h3>Your availability</h3><div class="small">Students see this when choosing you.</div>${ownStatus?`<div style="margin:8px 0"><span class="pill" style="background:${ownStatus[1]}">${ownStatus[0]}</span> <span class="small">${ownStatus[2]}</span></div><button class="btn o" data-a="avail">${S.counsellorAvailability[CNS[ownCounsellor].n]==='AWAY'?'Set me as available':'Set me as away'}</button>`:'<div class="small" style="margin-top:8px">No student booking profile is linked to this account.</div>'}</div>
