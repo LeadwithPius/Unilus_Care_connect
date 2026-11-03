@@ -38,7 +38,7 @@ public class StudentController {
             );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "message", "Registration received. Please verify your university email.",
+                "message", "Your account has been created. You can now log in.",
                 "studentId", student.getId(),
                 "fullName", request.getFullName(),
                 "email", request.getEmail(),
