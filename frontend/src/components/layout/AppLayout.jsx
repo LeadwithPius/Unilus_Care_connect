@@ -10,7 +10,7 @@ const navItems = [
   { to: '/me', label: 'Me', Icon: User },
 ]
 
-function EmergencyButton({ onClick = () => {} }) {
+function EmergencyButton({ onClick }) {
   return <button className="student-emergency" type="button" onClick={onClick}>
     <AlertTriangle size={17} strokeWidth={2.2} /> <span>Emergency session</span>
   </button>
@@ -73,7 +73,7 @@ export default function AppLayout() {
 
   return <div className="student-app-shell">
     <div className="student-content-column">
-      <div className="student-topbar"><Logo /><EmergencyButton /></div>
+      <div className="student-topbar"><Logo /><EmergencyButton onClick={() => navigate('/support#urgent-help')} /></div>
       <Outlet />
     </div>
     <BottomNav />
