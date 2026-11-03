@@ -16,6 +16,38 @@
   <script src="../../Frontend_Material/Shared/core.js"></script>
   <script>
     document.body.classList.add('care-workspace','care-admin-workspace');
+    let counsellors = [];
+    let listMessage = 'Loading registered counsellors…';
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      })[char]);
+    }
+
+    function counsellorRows() {
+      if (!counsellors.length) return '<p class="small">No counsellor accounts have been registered yet.</p>';
+      return counsellors.map(c => {
+        const status = c.enabled ? 'Active' : 'Disabled';
+        const booking = c.acceptingAppointments
+          ? (Number(c.openSlots) > 0 ? 'Taking bookings' : 'No open slots')
+          : 'Not accepting bookings';
+        return `<article class="card admin-counsellor-row">
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <h3>${escapeHtml(c.displayName)}</h3>
+              <p class="small">${escapeHtml(c.professionalTitle || 'Counsellor')}</p>
+            </div>
+            <span class="pill">${status}</span>
+          </div>
+          <p class="small">${escapeHtml(c.email)}</p>
+          <p class="small">Account: ${status} · Email verified: ${c.emailVerified ? 'Yes' : 'No'}</p>
+          <p class="small">Appointments: ${escapeHtml(booking)} · Open slots: ${Number(c.openSlots) || 0}</p>
+          <p class="small">Created: ${c.createdAt ? new Date(c.createdAt).toLocaleString() : '—'}</p>
+        </article>`;
+      }).join('');
+    }
+
     function view() {
       return `<h2>Administrator</h2>
         <div class="card">
@@ -32,13 +64,39 @@
           <button class="btn" type="button" data-a="create-counsellor">Create counsellor</button>
         </div>
         <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <h3>Registered counsellors</h3>
+            <button class="btn o" type="button" data-a="refresh-counsellors">Refresh list</button>
+          </div>
+          <p class="small" id="counsellor-list-message">${escapeHtml(listMessage)}</p>
+          <div id="counsellor-list">${counsellorRows()}</div>
+        </div>
+        <div class="card">
           <h3>Account management and reports</h3>
-          <p class="small">Counsellor listing, activation/deactivation, deletion and anonymised reporting are not yet exposed by the backend. These features are intentionally not simulated or populated with demo records.</p>
+          <p class="small">Registered accounts and their status are now displayed here. Activation/deactivation, deletion and anonymised reporting require separate audited workflows and are not simulated.</p>
         </div>
         <button class="btn o" type="button" data-a="logout">Log out</button>`;
     }
 
+    async function loadCounsellors() {
+      const message = document.getElementById('counsellor-list-message');
+      const list = document.getElementById('counsellor-list');
+      if (!message || !list) return;
+      message.textContent = 'Loading registered counsellors…';
+      try {
+        counsellors = await API.adminCounsellors();
+        message.textContent = counsellors.length
+          ? `${counsellors.length} registered counsellor account(s).`
+          : 'No counsellor accounts have been registered yet.';
+        list.innerHTML = counsellorRows();
+      } catch (error) {
+        message.textContent = error.message || 'Could not load counsellor accounts.';
+        list.innerHTML = '';
+      }
+    }
+
     async function act(action) {
+      if (action === 'refresh-counsellors') return loadCounsellors();
       if (action !== 'create-counsellor') return;
 
       const displayName = document.getElementById('counsellor-name').value.trim();
@@ -67,7 +125,8 @@
         document.getElementById('counsellor-email').value = '';
         document.getElementById('counsellor-title').value = '';
         document.getElementById('counsellor-password').value = '';
-        toast('Counsellor account created. Share the temporary password securely.');
+        toast('Counsellor account created.');
+        await loadCounsellors();
       } catch (error) {
         toast(error.message || 'Could not create the counsellor account.');
       } finally {
@@ -75,7 +134,8 @@
       }
     }
 
-    CC.mount({ role: 'a', title: 'Administrator', root: '../../', view, act });
+    function after() { loadCounsellors(); }
+    CC.mount({ role: 'a', title: 'Administrator', root: '../../', view, act, after });
   </script>
 </body>
 </html>
