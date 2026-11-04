@@ -126,6 +126,31 @@ export default function CounsellorWorkspace() {
     }
   }, [navigate])
 
+  const refreshOperationalData = useCallback(async () => {
+    try {
+      const [bookings, slots] = await Promise.all([
+        api.counsellorAppointments(),
+        api.counsellorAvailability(false),
+      ])
+      setAppointments(Array.isArray(bookings) ? bookings : [])
+      setAvailability(Array.isArray(slots) ? slots : [])
+      setLoadedAt(Date.now())
+      setError('')
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        api.logout()
+        navigate('/login', { replace: true })
+      } else {
+        setError(err.message || 'Appointment updates could not be refreshed.')
+      }
+    }
+  }, [navigate])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => { void refreshOperationalData() }, 20000)
+    return () => window.clearInterval(timer)
+  }, [refreshOperationalData])
+
   // This effect fetches remote workspace data; state updates occur only after the API promises settle.
   // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void loadWorkspace() }, [loadWorkspace])
