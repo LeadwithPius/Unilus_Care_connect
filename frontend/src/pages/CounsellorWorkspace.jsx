@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { api } from '../services/api'
+import ChatWorkspace from '../components/chat/ChatWorkspace.jsx'
 
 function formatDate(value) {
   if (!value) return 'Date unavailable'
@@ -124,6 +125,31 @@ export default function CounsellorWorkspace() {
       setLoading(false)
     }
   }, [navigate])
+
+  const refreshOperationalData = useCallback(async () => {
+    try {
+      const [bookings, slots] = await Promise.all([
+        api.counsellorAppointments(),
+        api.counsellorAvailability(false),
+      ])
+      setAppointments(Array.isArray(bookings) ? bookings : [])
+      setAvailability(Array.isArray(slots) ? slots : [])
+      setLoadedAt(Date.now())
+      setError('')
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        api.logout()
+        navigate('/login', { replace: true })
+      } else {
+        setError(err.message || 'Appointment updates could not be refreshed.')
+      }
+    }
+  }, [navigate])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => { void refreshOperationalData() }, 20000)
+    return () => window.clearInterval(timer)
+  }, [refreshOperationalData])
 
   // This effect fetches remote workspace data; state updates occur only after the API promises settle.
   // oxlint-disable-next-line react/set-state-in-effect
@@ -309,6 +335,8 @@ export default function CounsellorWorkspace() {
         </article>)}
       </div> : <div className="counsellor-empty"><CalendarDays size={23} /><strong>No upcoming availability</strong><p>Add a time slot so students can request an appointment with you.</p></div>}
     </section>
+
+    <section className="counsellor-section"><ChatWorkspace role="COUNSELLOR" embedded /></section>
 
     <footer className="counsellor-footer"><ShieldCheck size={17} /><span>Student identities are protected in this workspace. Appointment records use counsellor-specific student references rather than names or student numbers.</span></footer>
   </main>

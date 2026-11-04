@@ -353,6 +353,21 @@ export const api = {
     return request('GET', '/triage/assessments/mine')
   },
 
+  chatConversations(role) {
+    const audience = role === 'COUNSELLOR' ? 'counsellor' : 'student'
+    return request('GET', `/chat/${audience}/conversations`)
+  },
+
+  chatMessages(role, conversationId) {
+    const audience = role === 'COUNSELLOR' ? 'counsellor' : 'student'
+    return request('GET', `/chat/${audience}/conversations/${conversationId}/messages`)
+  },
+
+  sendChatMessage(role, conversationId, content) {
+    const audience = role === 'COUNSELLOR' ? 'counsellor' : 'student'
+    return request('POST', `/chat/${audience}/conversations/${conversationId}/messages`, { content })
+  },
+
   gameProgress() {
     return request('GET', '/game/progress')
   },
