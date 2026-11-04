@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { api } from '../services/api'
+import ChatWorkspace from '../components/chat/ChatWorkspace.jsx'
 
 function formatDate(value) {
   if (!value) return 'Date unavailable'
@@ -309,6 +310,8 @@ export default function CounsellorWorkspace() {
         </article>)}
       </div> : <div className="counsellor-empty"><CalendarDays size={23} /><strong>No upcoming availability</strong><p>Add a time slot so students can request an appointment with you.</p></div>}
     </section>
+
+    <section className="counsellor-section"><ChatWorkspace role="COUNSELLOR" embedded /></section>
 
     <footer className="counsellor-footer"><ShieldCheck size={17} /><span>Student identities are protected in this workspace. Appointment records use counsellor-specific student references rather than names or student numbers.</span></footer>
   </main>
