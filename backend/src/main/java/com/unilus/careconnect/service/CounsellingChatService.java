@@ -121,6 +121,7 @@ public class CounsellingChatService {
                 LIMIT 1
             ) latest ON TRUE
             WHERE cs.counsellor_profile_id = ?
+              AND a.counselling_mode = 'TRIAGE_CHAT'
             ORDER BY COALESCE(latest.created_at, a.scheduled_start) DESC,
                      cs.id
             """, identity.profileId());
@@ -217,10 +218,15 @@ public class CounsellingChatService {
     private void requireConversationAccess(
             UUID profileId, String role, UUID conversationId) {
         String ownerColumn = "STUDENT".equals(role)
-                ? "student_profile_id" : "counsellor_profile_id";
+                ? "cs.student_profile_id" : "cs.counsellor_profile_id";
         Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM wellness.counselling_sessions WHERE id = ? AND "
-                        + ownerColumn + " = ?",
+                """
+                SELECT COUNT(*)
+                FROM wellness.counselling_sessions cs
+                JOIN wellness.appointments a ON a.id = cs.appointment_id
+                WHERE cs.id = ?
+                  AND
+                """ + ownerColumn + " = ? AND a.counselling_mode = 'TRIAGE_CHAT'",
                 Integer.class, conversationId, profileId);
         if (count == null || count != 1) {
             throw new IllegalArgumentException(

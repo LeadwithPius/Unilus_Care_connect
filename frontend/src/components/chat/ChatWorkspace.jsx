@@ -71,11 +71,15 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
     if (showLoading) setMessagesLoading(true)
     try {
       const result = await api.chatMessages(role, conversationId)
-      if (activeConversationRef.current === conversationId) setMessages(Array.isArray(result) ? result : [])
-      setMessageError('')
+      if (activeConversationRef.current === conversationId) {
+        setMessages(Array.isArray(result) ? result : [])
+        setMessageError('')
+      }
     } catch (err) {
       if (err.status === 401 || err.status === 403) { api.logout(); navigate('/login', { replace: true }); return }
-      setMessageError(err.message || 'Messages could not be loaded.')
+      if (activeConversationRef.current === conversationId) {
+        setMessageError(err.message || 'Messages could not be loaded.')
+      }
     } finally {
       if (showLoading) setMessagesLoading(false)
     }
@@ -86,16 +90,32 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
   }, [selectedId])
 
   useEffect(() => {
-    void loadConversations(true)
+    let active = true
     const timer = window.setInterval(() => { void loadConversations(false) }, 15000)
-    return () => window.clearInterval(timer)
+    queueMicrotask(() => {
+      if (active) void loadConversations(true)
+    })
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
   }, [loadConversations])
 
   useEffect(() => {
     if (!selectedId) return undefined
-    void loadMessages(selectedId, true)
-    const timer = window.setInterval(() => { void loadMessages(selectedId, false) }, 4000)
-    return () => window.clearInterval(timer)
+
+    let active = true
+    const conversationId = selectedId
+    const timer = window.setInterval(() => {
+      void loadMessages(conversationId, false)
+    }, 4000)
+    queueMicrotask(() => {
+      if (active) void loadMessages(conversationId, true)
+    })
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
   }, [loadMessages, selectedId])
 
   useEffect(() => {
@@ -110,7 +130,9 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
     setMessageError('')
     try {
       const created = await api.sendChatMessage(role, selectedId, content)
-      setMessages(current => [...current, created])
+      setMessages(current => current.some(message => message.messageId === created.messageId)
+        ? current
+        : [...current, created])
       setDraft('')
       void loadConversations(false)
     } catch (err) {
@@ -148,7 +170,12 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
               className={`care-chat-conversation${selectedId === item.conversationId ? ' is-active' : ''}`}
               key={item.conversationId}
               type="button"
-              onClick={() => { activeConversationRef.current = item.conversationId; setMessages([]); setSelectedId(item.conversationId) }}
+              onClick={() => {
+                activeConversationRef.current = item.conversationId
+                setMessages([])
+                setMessageError('')
+                setSelectedId(item.conversationId)
+              }}
             >
               <span className="care-chat-avatar"><MessageCircle size={17} /></span>
               <span className="care-chat-conversation-copy">
