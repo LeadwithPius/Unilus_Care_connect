@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,7 +49,7 @@ public class CounsellorAppointmentService {
             ON CONFLICT DO NOTHING
             """, counsellorId, counsellorId);
 
-        return jdbc.queryForList("""
+        StringBuilder sql = new StringBuilder("""
             SELECT a.id AS "appointmentId",
                    a.status,
                    a.counselling_mode AS "counsellingMode",
@@ -70,10 +71,22 @@ public class CounsellorAppointmentService {
               ON sc.id = a.support_category_id
             LEFT JOIN wellness.counselling_sessions cs ON cs.appointment_id = a.id
             WHERE av.counsellor_profile_id = ?
-              AND (? IS NULL OR a.status = ?)
+            """);
+
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(counsellorId);
+
+        if (normalized != null) {
+            sql.append(" AND a.status = ?");
+            parameters.add(normalized);
+        }
+
+        sql.append("""
             ORDER BY a.scheduled_start ASC, a.created_at ASC
             LIMIT 200
-            """, counsellorId, normalized, normalized);
+            """);
+
+        return jdbc.queryForList(sql.toString(), parameters.toArray());
     }
 
     @Transactional
