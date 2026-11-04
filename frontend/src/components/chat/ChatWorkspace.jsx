@@ -86,16 +86,35 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
   }, [selectedId])
 
   useEffect(() => {
-    void loadConversations(true)
+    let active = true
     const timer = window.setInterval(() => { void loadConversations(false) }, 15000)
-    return () => window.clearInterval(timer)
+    queueMicrotask(() => {
+      if (active) void loadConversations(true)
+    })
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
   }, [loadConversations])
 
   useEffect(() => {
-    if (!selectedId) return undefined
-    void loadMessages(selectedId, true)
-    const timer = window.setInterval(() => { void loadMessages(selectedId, false) }, 4000)
-    return () => window.clearInterval(timer)
+    if (!selectedId) {
+      setMessages([])
+      return undefined
+    }
+
+    let active = true
+    const conversationId = selectedId
+    const timer = window.setInterval(() => {
+      void loadMessages(conversationId, false)
+    }, 4000)
+    queueMicrotask(() => {
+      if (active) void loadMessages(conversationId, true)
+    })
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
   }, [loadMessages, selectedId])
 
   useEffect(() => {
@@ -110,7 +129,9 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
     setMessageError('')
     try {
       const created = await api.sendChatMessage(role, selectedId, content)
-      setMessages(current => [...current, created])
+      setMessages(current => current.some(message => message.messageId === created.messageId)
+        ? current
+        : [...current, created])
       setDraft('')
       void loadConversations(false)
     } catch (err) {
