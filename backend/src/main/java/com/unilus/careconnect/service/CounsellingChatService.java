@@ -196,6 +196,13 @@ public class CounsellingChatService {
             VALUES (?, ?, ?, ?, ?)
             """, messageId, conversationId, identity.userId(), role, body);
 
+        jdbc.update("""
+            INSERT INTO credentials.audit_events
+                (user_id, event_type, outcome, entity_type, entity_id)
+            VALUES (?, 'COUNSELLING_MESSAGE_SENT', 'SUCCESS',
+                    'counselling_message', ?)
+            """, identity.userId(), messageId);
+
         return jdbc.queryForMap("""
             SELECT id AS "messageId",
                    sender_role AS "senderRole",
