@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LoaderCircle, MessageCircle, RefreshCw, Send, ShieldCheck } from 'lucide-react'
 import { api } from '../services/api'
+import { useNavigate } from 'react-router-dom'
 
 function formatConversationDate(value) {
   if (!value) return 'Scheduled session'
@@ -25,6 +26,7 @@ function ChatNotice({ children, type = 'error' }) {
 }
 
 export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
+  const navigate = useNavigate()
   const [conversations, setConversations] = useState([])
   const [selectedId, setSelectedId] = useState('')
   const [messages, setMessages] = useState([])
@@ -35,6 +37,7 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
   const [error, setError] = useState('')
   const [messageError, setMessageError] = useState('')
   const bottomRef = useRef(null)
+  const activeConversationRef = useRef('')
   const selected = useMemo(
     () => conversations.find(item => item.conversationId === selectedId) || null,
     [conversations, selectedId],
@@ -52,12 +55,13 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
       })
       setError('')
     } catch (err) {
+      if (err.status === 401 || err.status === 403) { api.logout(); navigate('/login', { replace: true }); return }
       setError(err.message || 'Your conversations could not be loaded.')
     } finally {
       if (showLoading) setLoading(false)
       else setLoading(false)
     }
-  }, [role])
+  }, [navigate, role])
 
   const loadMessages = useCallback(async (conversationId, showLoading = false) => {
     if (!conversationId) {
@@ -67,14 +71,19 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
     if (showLoading) setMessagesLoading(true)
     try {
       const result = await api.chatMessages(role, conversationId)
-      setMessages(Array.isArray(result) ? result : [])
+      if (activeConversationRef.current === conversationId) setMessages(Array.isArray(result) ? result : [])
       setMessageError('')
     } catch (err) {
+      if (err.status === 401 || err.status === 403) { api.logout(); navigate('/login', { replace: true }); return }
       setMessageError(err.message || 'Messages could not be loaded.')
     } finally {
       if (showLoading) setMessagesLoading(false)
     }
-  }, [role])
+  }, [navigate, role])
+
+  useEffect(() => {
+    activeConversationRef.current = selectedId
+  }, [selectedId])
 
   useEffect(() => {
     void loadConversations(true)
@@ -138,7 +147,7 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
               className={`care-chat-conversation${selectedId === item.conversationId ? ' is-active' : ''}`}
               key={item.conversationId}
               type="button"
-              onClick={() => { setMessages([]); setSelectedId(item.conversationId) }}
+              onClick={() => { activeConversationRef.current = item.conversationId; setMessages([]); setSelectedId(item.conversationId) }}
             >
               <span className="care-chat-avatar"><MessageCircle size={17} /></span>
               <span className="care-chat-conversation-copy">
