@@ -91,6 +91,7 @@ public class CounsellingChatService {
                    cs.student_profile_id,
                    upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10))
             FROM wellness.counselling_sessions cs
+            JOIN wellness.appointments a ON a.id = cs.appointment_id
             WHERE cs.counsellor_profile_id = ?
               AND a.counselling_mode = 'TRIAGE_CHAT'
             ON CONFLICT DO NOTHING
