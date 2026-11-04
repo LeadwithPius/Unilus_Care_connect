@@ -21,6 +21,7 @@ import AppLayout from './components/layout/AppLayout.jsx'
 import Learn from './pages/Learn.jsx'
 import CounsellorWorkspace from './pages/CounsellorWorkspace.jsx'
 import AdminWorkspace from './pages/AdminWorkspace.jsx'
+import ChatWorkspace from './components/chat/ChatWorkspace.jsx'
 import { Home, Support, Me } from './pages/StudentPlaceholders.jsx'
 
 import {
@@ -503,6 +504,7 @@ function App() {
           <Route path="/student" element={<Navigate to="/learn" replace />} />
           <Route path="/learn" element={<Learn />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/chat" element={<ChatWorkspace role="STUDENT" />} />
           <Route path="/support" element={<Support />} />
           <Route path="/me" element={<Me />} />
         </Route>
