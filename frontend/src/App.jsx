@@ -16,6 +16,10 @@ import {
   Sparkles,
 } from 'lucide-react'
 import './App.css'
+import './StudentExperience.css'
+import AppLayout from './components/layout/AppLayout.jsx'
+import Learn from './pages/Learn.jsx'
+import { Home, Support, Me } from './pages/StudentPlaceholders.jsx'
 
 import {
   BrowserRouter,
@@ -30,7 +34,6 @@ import {
   ForgotPasswordPage,
   ResetPasswordPage,
   VerifyEmailPage,
-  StudentPortal,
   CounsellorPortal,
   AdminPortal,
 } from './AuthPages.jsx'
@@ -495,7 +498,13 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-        <Route path="/student" element={<StudentPortal />} />
+        <Route element={<AppLayout />}>
+          <Route path="/student" element={<Navigate to="/learn" replace />} />
+          <Route path="/learn" element={<Learn />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/me" element={<Me />} />
+        </Route>
         <Route path="/counsellor" element={<CounsellorPortal />} />
         <Route path="/admin" element={<AdminPortal />} />
 
