@@ -75,7 +75,9 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
       setMessageError('')
     } catch (err) {
       if (err.status === 401 || err.status === 403) { api.logout(); navigate('/login', { replace: true }); return }
-      setMessageError(err.message || 'Messages could not be loaded.')
+      if (activeConversationRef.current === conversationId) {
+        setMessageError(err.message || 'Messages could not be loaded.')
+      }
     } finally {
       if (showLoading) setMessagesLoading(false)
     }
@@ -98,10 +100,7 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
   }, [loadConversations])
 
   useEffect(() => {
-    if (!selectedId) {
-      setMessages([])
-      return undefined
-    }
+    if (!selectedId) return undefined
 
     let active = true
     const conversationId = selectedId
@@ -169,7 +168,12 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
               className={`care-chat-conversation${selectedId === item.conversationId ? ' is-active' : ''}`}
               key={item.conversationId}
               type="button"
-              onClick={() => { activeConversationRef.current = item.conversationId; setMessages([]); setSelectedId(item.conversationId) }}
+              onClick={() => {
+                activeConversationRef.current = item.conversationId
+                setMessages([])
+                setMessageError('')
+                setSelectedId(item.conversationId)
+              }}
             >
               <span className="care-chat-avatar"><MessageCircle size={17} /></span>
               <span className="care-chat-conversation-copy">
