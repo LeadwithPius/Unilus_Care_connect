@@ -163,15 +163,15 @@ public class CounsellingChatService {
         try {
             String ownerColumn = "STUDENT".equals(role)
                     ? "cs.student_profile_id" : "cs.counsellor_profile_id";
-            session = jdbc.queryForMap("""
+            String sql = """
                 SELECT cs.session_status AS "sessionStatus",
                        a.status AS "appointmentStatus"
                 FROM wellness.counselling_sessions cs
                 JOIN wellness.appointments a ON a.id = cs.appointment_id
                 WHERE cs.id = ?
-                  AND """ + ownerColumn + """ = ?
-                FOR UPDATE OF cs
-                """, conversationId, identity.profileId());
+                  AND
+                """ + ownerColumn + " = ? FOR UPDATE OF cs";
+            session = jdbc.queryForMap(sql, conversationId, identity.profileId());
         } catch (EmptyResultDataAccessException ex) {
             throw new IllegalArgumentException("Conversation not found or you do not have access to it.");
         }
