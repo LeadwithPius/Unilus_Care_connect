@@ -664,6 +664,62 @@
         toast('Anonymised CSV report exported.');
     }
 
+const adminAvailabilityState = { rows: [], loading: false, loaded: false, error: '' };
+
+function adminAvailabilityMarkup() {
+    if (adminAvailabilityState.loading) {
+        return '<section class="card"><h3>Counsellor availability</h3><p class="small">Loading live availability…</p></section>';
+    }
+    if (adminAvailabilityState.error) {
+        return `<section class="card"><h3>Counsellor availability</h3><p class="small">${adminEscape(adminAvailabilityState.error)}</p><button class="btn o" data-admin-availability="refresh">Retry</button></section>`;
+    }
+    if (!adminAvailabilityState.loaded) {
+        return '<section class="card"><h3>Counsellor availability</h3><p class="small">Loading live availability…</p></section>';
+    }
+    if (!adminAvailabilityState.rows.length) {
+        return '<section class="card"><h3>Counsellor availability</h3><p class="small">No enabled counsellor accounts were found.</p></section>';
+    }
+
+    const groups = new Map();
+    adminAvailabilityState.rows.forEach(row => {
+        const key = row.profileId;
+        if (!groups.has(key)) groups.set(key, { counsellor: row, slots: [] });
+        if (row.availabilityId) groups.get(key).slots.push(row);
+    });
+
+    return `
+        <section class="card" id="admin-live-availability">
+            <h3>Counsellor availability</h3>
+            <p class="small">Live information from the CareConnect database. Open future slots are visible to students.</p>
+            ${[...groups.values()].map(group => `
+                <div class="row" style="display:block;padding:10px 0;border-bottom:1px solid #e5ece8">
+                    <b>${adminEscape(group.counsellor.displayName || 'Counsellor')}</b>
+                    <div class="small">${adminEscape(group.counsellor.email || '')} · ${adminEscape(group.counsellor.professionalTitle || 'No title added')}</div>
+                    <div class="small">${group.slots.length} open future slot(s) · ${group.counsellor.acceptingAppointments ? 'Accepting appointments' : 'Not accepting appointments'}</div>
+                    ${group.slots.map(slot => `<div class="small" style="margin:5px 0">• ${adminEscape(new Date(slot.startsAt).toLocaleString())} – ${adminEscape(new Date(slot.endsAt).toLocaleTimeString())}</div>`).join('')}
+                </div>
+            `).join('')}
+            <button class="btn o" data-admin-availability="refresh" type="button">Refresh availability</button>
+        </section>
+    `;
+}
+
+async function loadAdminAvailability(force = false) {
+    if (adminAvailabilityState.loading || (adminAvailabilityState.loaded && !force)) return;
+    adminAvailabilityState.loading = true;
+    adminAvailabilityState.error = '';
+    try {
+        const data = await API.adminCounsellorAvailability();
+        adminAvailabilityState.rows = Array.isArray(data) ? data : [];
+        adminAvailabilityState.loaded = true;
+    } catch (error) {
+        adminAvailabilityState.error = error.message || 'Could not load counsellor availability.';
+    } finally {
+        adminAvailabilityState.loading = false;
+        if (window.PAGE?.title === 'Administrator') render();
+    }
+}
+
     function view() {
         return `
             <h2>Administrator</h2>
@@ -725,7 +781,7 @@
                 </button>
             </section>
 
-            ${adminReportsMarkup()}
+            ${adminAvailabilityMarkup()}\n\n            ${adminReportsMarkup()}
 
             <button class="btn o" data-a="chpw" type="button">
                 Change password
@@ -776,6 +832,16 @@
     }
 
     function after() {
+        document.querySelectorAll('[data-admin-availability="refresh"]').forEach(button => {
+            button.onclick = () => {
+                adminAvailabilityState.loaded = false;
+                loadAdminAvailability(true);
+            };
+        });
+        if (!adminAvailabilityState.loaded && !adminAvailabilityState.loading) {
+            loadAdminAvailability();
+        }
+
         document.querySelectorAll('[data-ct]').forEach(button => {
             button.onclick = () => {
                 const counsellor = S.cs[+button.dataset.ct];
