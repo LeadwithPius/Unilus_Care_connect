@@ -83,7 +83,6 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
   }, [loadConversations])
 
   useEffect(() => {
-    setMessages([])
     if (!selectedId) return undefined
     void loadMessages(selectedId, true)
     const timer = window.setInterval(() => { void loadMessages(selectedId, false) }, 4000)
@@ -139,7 +138,7 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
               className={`care-chat-conversation${selectedId === item.conversationId ? ' is-active' : ''}`}
               key={item.conversationId}
               type="button"
-              onClick={() => setSelectedId(item.conversationId)}
+              onClick={() => { setMessages([]); setSelectedId(item.conversationId) }}
             >
               <span className="care-chat-avatar"><MessageCircle size={17} /></span>
               <span className="care-chat-conversation-copy">
