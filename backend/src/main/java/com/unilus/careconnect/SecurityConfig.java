@@ -146,6 +146,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/counsellors/**")
                     .hasRole("STUDENT")
 
+                // Counselling chat is restricted by participant role; the service
+                // additionally verifies that the authenticated profile owns each session.
+                .requestMatchers("/api/chat/student/**")
+                    .hasRole("STUDENT")
+
+                .requestMatchers("/api/chat/counsellor/**")
+                    .hasRole("COUNSELLOR")
+
                 // Counsellor triage endpoints.
                 .requestMatchers("/api/triage/counsellor/**")
                     .hasRole("COUNSELLOR")
