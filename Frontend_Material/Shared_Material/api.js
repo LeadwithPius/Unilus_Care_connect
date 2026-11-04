@@ -409,6 +409,28 @@
         },
 
         /**
+         * Retrieve and update the authenticated counsellor's public profile.
+         */
+        counsellorProfile() {
+            return this.call('GET', '/counsellor/profile');
+        },
+
+        updateCounsellorProfile(details) {
+            return this.call('PUT', '/counsellor/profile', {
+                displayName: details.displayName,
+                professionalTitle: details.professionalTitle,
+                biography: details.biography
+            });
+        },
+
+        /**
+         * Retrieve counsellor availability for administrator oversight.
+         */
+        adminCounsellorAvailability() {
+            return this.call('GET', '/admin/counsellor-availability');
+        },
+
+        /**
          * Retrieve counsellor availability.
          */
         getAvailability(openOnly = true) {
