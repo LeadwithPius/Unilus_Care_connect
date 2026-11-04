@@ -333,60 +333,6 @@ public class TriageWellbeingService {
         return checkInsForStudent(studentId(email));
     }
 
-    @Transactional
-    public List<Map<String, Object>> counsellorCheckIns(
-            String email,
-            UUID studentProfileId) {
-
-        UUID counsellorId;
-
-        try {
-            counsellorId = jdbc.queryForObject("""
-                SELECT cp.id
-                FROM credentials.counsellor_profiles cp
-                JOIN credentials.users u ON u.id = cp.user_id
-                WHERE lower(u.email) = lower(?)
-                  AND u.enabled = TRUE
-                """,
-                UUID.class,
-                email);
-
-        } catch (EmptyResultDataAccessException e) {
-            throw new IllegalStateException(
-                    "Counsellor profile not found.");
-        }
-
-        Integer authorized = jdbc.queryForObject("""
-            SELECT COUNT(*)
-            FROM wellness.counselling_sessions
-            WHERE student_profile_id = ?
-              AND counsellor_profile_id = ?
-              AND session_status IN ('IN_PROGRESS', 'COMPLETED')
-            """,
-            Integer.class,
-            studentProfileId,
-            counsellorId);
-
-        if (authorized == null || authorized == 0) {
-            audit(
-                    email,
-                    "WELLBEING_ACCESS_DENIED",
-                    "student_profile",
-                    studentProfileId);
-
-            throw new SecurityException(
-                    "You are not authorized to view this student's wellbeing history.");
-        }
-
-        audit(
-                email,
-                "WELLBEING_HISTORY_VIEWED",
-                "student_profile",
-                studentProfileId);
-
-        return checkInsForStudent(studentProfileId);
-    }
-
     private List<Map<String, Object>> checkInsForStudent(UUID studentId) {
 
         return jdbc.queryForList("""

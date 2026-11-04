@@ -30,8 +30,19 @@ class BookAppointmentRequestValidationTest {
     }
 
     @Test
-    void requiresSlotAndSupportCategory() {
+    void requiresSlotSupportCategoryAndConsentDocument() {
         assertFalse(validator.validate(new BookAppointmentRequest()).isEmpty());
+    }
+
+
+    @Test
+    void rejectsMissingConsentDocumentWhenOtherBookingFieldsAreValid() {
+        BookAppointmentRequest request = new BookAppointmentRequest();
+        request.setAvailabilitySlotId(UUID.randomUUID());
+        request.setSupportCategoryCode("ACADEMIC_STRESS");
+        request.setCounsellingMode("FACE_TO_FACE");
+
+        assertFalse(validator.validate(request).isEmpty());
     }
 
     @Test
@@ -39,6 +50,7 @@ class BookAppointmentRequestValidationTest {
         BookAppointmentRequest request = new BookAppointmentRequest();
         request.setAvailabilitySlotId(UUID.randomUUID());
         request.setSupportCategoryCode("ACADEMIC_STRESS");
+        request.setConsentDocumentId(UUID.randomUUID());
         request.setCounsellingMode("CALL");
         request.setAlternativeModeReason("OFF_CAMPUS");
 
@@ -50,6 +62,7 @@ class BookAppointmentRequestValidationTest {
         BookAppointmentRequest request = new BookAppointmentRequest();
         request.setAvailabilitySlotId(UUID.randomUUID());
         request.setSupportCategoryCode("ACADEMIC_STRESS");
+        request.setConsentDocumentId(UUID.randomUUID());
         request.setCounsellingMode("VIDEO");
         request.setAlternativeModeReason("OFF_CAMPUS");
 

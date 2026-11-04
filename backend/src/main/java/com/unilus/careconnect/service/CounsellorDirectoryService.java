@@ -35,6 +35,23 @@ public class CounsellorDirectoryService {
                         JOIN credentials.users u
                             ON u.id = cp.user_id
                         WHERE u.enabled = TRUE
+                          AND cp.accepting_appointments = TRUE
+                          AND EXISTS (
+                              SELECT 1
+                              FROM wellness.availability_slots av
+                              WHERE av.counsellor_profile_id = cp.id
+                                AND av.status = 'OPEN'
+                                AND av.starts_at > CURRENT_TIMESTAMP
+                                AND NOT EXISTS (
+                                    SELECT 1
+                                    FROM wellness.appointments booked
+                                    WHERE booked.availability_slot_id = av.id
+                                      AND booked.status IN (
+                                          'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                          'COMPLETED', 'NO_SHOW'
+                                      )
+                                )
+                          )
                         ORDER BY cp.display_name
                         """,
                         (rs, rowNum) ->
@@ -63,14 +80,23 @@ public class CounsellorDirectoryService {
                             jdbcTemplate.query(
                                     """
                                     SELECT
-                                        id,
-                                        starts_at,
-                                        ends_at
-                                    FROM wellness.availability_slots
-                                    WHERE counsellor_profile_id = ?
-                                      AND status = 'OPEN'
-                                      AND starts_at > CURRENT_TIMESTAMP
-                                    ORDER BY starts_at
+                                        av.id,
+                                        av.starts_at,
+                                        av.ends_at
+                                    FROM wellness.availability_slots av
+                                    WHERE av.counsellor_profile_id = ?
+                                      AND av.status = 'OPEN'
+                                      AND av.starts_at > CURRENT_TIMESTAMP
+                                      AND NOT EXISTS (
+                                          SELECT 1
+                                          FROM wellness.appointments booked
+                                          WHERE booked.availability_slot_id = av.id
+                                            AND booked.status IN (
+                                                'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                                'COMPLETED', 'NO_SHOW'
+                                            )
+                                      )
+                                    ORDER BY av.starts_at
                                     LIMIT 20
                                     """,
                                     (rs, rowNum) ->
