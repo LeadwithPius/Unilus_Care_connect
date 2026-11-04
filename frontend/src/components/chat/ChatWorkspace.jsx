@@ -71,8 +71,10 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
     if (showLoading) setMessagesLoading(true)
     try {
       const result = await api.chatMessages(role, conversationId)
-      if (activeConversationRef.current === conversationId) setMessages(Array.isArray(result) ? result : [])
-      setMessageError('')
+      if (activeConversationRef.current === conversationId) {
+        setMessages(Array.isArray(result) ? result : [])
+        setMessageError('')
+      }
     } catch (err) {
       if (err.status === 401 || err.status === 403) { api.logout(); navigate('/login', { replace: true }); return }
       if (activeConversationRef.current === conversationId) {
