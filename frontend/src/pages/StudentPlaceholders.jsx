@@ -315,6 +315,15 @@ export function Support() {
       setSuccess(`Your appointment request has been submitted. Current status: ${String(appointment.status || 'REQUESTED').replaceAll('_', ' ')}.`)
       setAccepted(false)
       setSlotId('')
+      // Refresh the directory so a slot that has just been booked disappears
+      // from the student's available choices without requiring a page reload.
+      try {
+        const refreshedCounsellors = await api.counsellors()
+        setCounsellors(Array.isArray(refreshedCounsellors) ? refreshedCounsellors : [])
+      } catch {
+        // The booking is already confirmed by the server; a later page load
+        // will refresh the directory if this optional refresh is unavailable.
+      }
     } catch (err) {
       setError(err.message || 'Your appointment request could not be submitted.')
     } finally {
