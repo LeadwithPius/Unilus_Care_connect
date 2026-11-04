@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LoaderCircle, MessageCircle, RefreshCw, Send, ShieldCheck } from 'lucide-react'
-import { api } from '../services/api'
+import { api } from '../../services/api'
 import { useNavigate } from 'react-router-dom'
 
 function formatConversationDate(value) {
