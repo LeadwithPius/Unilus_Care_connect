@@ -384,6 +384,7 @@ export function Support() {
               <option value="COUNSELLOR_RECOMMENDED">Recommended by a counsellor</option>
             </select>
           </label>}
+          {mode === 'TRIAGE_CHAT' && <p className="journey-inline-note">Your private chat window becomes available here after the counsellor confirms your appointment. Messages are not monitored continuously.</p>}
 
           {consent && <div className="journey-consent-box">
             <div className="journey-consent-title"><ShieldCheck size={19} /><div><strong>{consent.title}</strong><small>Version {consent.versionLabel}</small></div></div>
