@@ -100,6 +100,8 @@ export function Home() {
     }
   }, [])
 
+  // This effect fetches remote dashboard data; state updates occur only after the API promises settle.
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void loadDashboard() }, [loadDashboard])
 
   const upcoming = useMemo(() => appointments

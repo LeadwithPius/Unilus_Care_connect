@@ -180,6 +180,49 @@ export const api = {
     return request('POST', '/auth/verify-email', { token })
   },
 
+  adminOverview() {
+    return request('GET', '/admin/overview')
+  },
+
+  adminAppointments() {
+    return request('GET', '/admin/appointments')
+  },
+
+  adminStudents() {
+    return request('GET', '/admin/students')
+  },
+
+  setStudentStatus(userId, enabled) {
+    return request('PATCH', `/admin/students/${userId}/status`, { enabled })
+  },
+
+  setCounsellorStatus(userId, enabled) {
+    return request('PATCH', `/admin/counsellors/${userId}/status`, { enabled })
+  },
+
+  adminEducation() {
+    return request('GET', '/admin/education')
+  },
+
+  saveEducationResource(details) {
+    const { id, ...payload } = details
+    return id
+      ? request('PUT', `/admin/education/${id}`, payload)
+      : request('POST', '/admin/education', payload)
+  },
+
+  setEducationPublication(id, published) {
+    return request('PATCH', `/admin/education/${id}/publication?published=${published}`)
+  },
+
+  adminConsentDocuments() {
+    return request('GET', '/admin/consent-documents')
+  },
+
+  publishConsentDocument(details) {
+    return request('POST', '/admin/consent-documents', details)
+  },
+
   createCounsellor(details) {
     return request('POST', '/admin/counsellors', {
       email: details.email,
@@ -246,6 +289,10 @@ export const api = {
 
   counsellorProfile() {
     return request('GET', '/counsellor/profile')
+  },
+
+  updateCounsellorProfile(details) {
+    return request('PUT', '/counsellor/profile', details)
   },
 
   setAcceptingAppointments(acceptingAppointments) {

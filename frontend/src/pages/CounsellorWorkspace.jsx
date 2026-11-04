@@ -88,6 +88,9 @@ export default function CounsellorWorkspace() {
   const [acceptingBusy, setAcceptingBusy] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showProfileForm, setShowProfileForm] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState({ displayName: '', professionalTitle: '', biography: '' })
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
 
@@ -106,6 +109,7 @@ export default function CounsellorWorkspace() {
       }
       const counsellor = await api.counsellorProfile()
       setProfile(counsellor)
+      setProfileForm({ displayName: counsellor.displayName || '', professionalTitle: counsellor.professionalTitle || '', biography: counsellor.biography || '' })
       setAppointments(Array.isArray(bookings) ? bookings : [])
       setAvailability(Array.isArray(slots) ? slots : [])
       setLoadedAt(Date.now())
@@ -121,6 +125,8 @@ export default function CounsellorWorkspace() {
     }
   }, [navigate])
 
+  // This effect fetches remote workspace data; state updates occur only after the API promises settle.
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void loadWorkspace() }, [loadWorkspace])
 
   const visibleAppointments = useMemo(() => filter === 'ALL'
@@ -165,6 +171,28 @@ export default function CounsellorWorkspace() {
       setError(err.message || 'The appointment could not be updated.')
     } finally {
       setBusyId('')
+    }
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault()
+    setSavingProfile(true)
+    setError('')
+    setSuccess('')
+    try {
+      const updated = await api.updateCounsellorProfile(profileForm)
+      setProfile(current => ({ ...current, ...updated }))
+      setProfileForm({
+        displayName: updated.displayName || '',
+        professionalTitle: updated.professionalTitle || '',
+        biography: updated.biography || '',
+      })
+      setShowProfileForm(false)
+      setSuccess('Your professional profile has been updated.')
+    } catch (err) {
+      setError(err.message || 'Your profile could not be updated.')
+    } finally {
+      setSavingProfile(false)
     }
   }
 
@@ -234,11 +262,18 @@ export default function CounsellorWorkspace() {
 
     <section className="counsellor-welcome">
       <div><span>YOUR WORKSPACE</span><h1>Welcome, {profile?.displayName || 'Counsellor'}.</h1><p>Manage your appointment requests, schedule and counselling sessions in one place.</p></div>
-      <button className={`counsellor-accept-toggle ${profile?.acceptingAppointments ? 'is-on' : ''}`} type="button" disabled={acceptingBusy} onClick={toggleAccepting}>
+      <div className="counsellor-welcome-actions"><button className="counsellor-profile-edit" type="button" onClick={() => setShowProfileForm(value => !value)}>{showProfileForm ? 'Close profile' : 'Edit profile'}</button><button className={`counsellor-accept-toggle ${profile?.acceptingAppointments ? 'is-on' : ''}`} type="button" disabled={acceptingBusy} onClick={toggleAccepting}>
         <span className="counsellor-toggle-dot" />
         {acceptingBusy ? 'Updating…' : profile?.acceptingAppointments ? 'Accepting appointments' : 'Not accepting appointments'}
-      </button>
+      </button></div>
     </section>
+
+    {showProfileForm && <form className="counsellor-profile-form" onSubmit={saveProfile}>
+      <label><span>Display name</span><input required maxLength={150} value={profileForm.displayName} onChange={event => setProfileForm(current => ({ ...current, displayName: event.target.value }))} /></label>
+      <label><span>Professional title</span><input maxLength={150} value={profileForm.professionalTitle} onChange={event => setProfileForm(current => ({ ...current, professionalTitle: event.target.value }))} /></label>
+      <label className="counsellor-profile-bio"><span>Professional biography</span><textarea rows="4" maxLength={5000} value={profileForm.biography} onChange={event => setProfileForm(current => ({ ...current, biography: event.target.value }))} /></label>
+      <button type="submit" disabled={savingProfile}>{savingProfile ? 'Saving…' : 'Save profile'}</button>
+    </form>}
 
     <WorkspaceMessage>{error}</WorkspaceMessage>
     <WorkspaceMessage type="success">{success}</WorkspaceMessage>

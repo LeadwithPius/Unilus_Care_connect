@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,6 +43,40 @@ public class CounsellorWorkspaceController {
         }
     }
 
+    @PutMapping
+    public ResponseEntity<?> updateMyProfile(
+            Authentication authentication,
+            @RequestBody UpdateCounsellorProfileRequest request) {
+        if (request == null || request.displayName() == null
+                || request.displayName().isBlank()
+                || request.displayName().trim().length() > 150
+                || (request.professionalTitle() != null && request.professionalTitle().trim().length() > 150)
+                || (request.biography() != null && request.biography().trim().length() > 5000)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Please provide a valid display name, title and biography."));
+        }
+        int updated = jdbcTemplate.update("""
+                UPDATE credentials.counsellor_profiles cp
+                SET display_name = ?,
+                    professional_title = ?,
+                    biography = ?
+                FROM credentials.users u
+                WHERE cp.user_id = u.id
+                  AND lower(u.email) = lower(?)
+                  AND u.enabled = TRUE
+                """,
+                request.displayName().trim(),
+                request.professionalTitle() == null || request.professionalTitle().isBlank()
+                        ? null : request.professionalTitle().trim(),
+                request.biography() == null || request.biography().isBlank()
+                        ? null : request.biography().trim(),
+                authentication.getName());
+        if (updated != 1) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No enabled counsellor profile is linked to this account."));
+        }
+        return getMyProfile(authentication);
+    }
+
     @PatchMapping("/accepting-appointments")
     public ResponseEntity<?> updateAcceptingAppointments(
             Authentication authentication,
@@ -74,4 +109,6 @@ public class CounsellorWorkspaceController {
     }
 
     public record AcceptingAppointmentsRequest(Boolean acceptingAppointments) {}
+
+    public record UpdateCounsellorProfileRequest(String displayName, String professionalTitle, String biography) {}
 }

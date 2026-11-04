@@ -71,6 +71,24 @@ public class ConsentService {
     }
 
     @Transactional(readOnly = true)
+    public List<ConsentDocument> listDocuments() {
+        return jdbcTemplate.query("""
+                SELECT id, purpose_code, version_label, title, body, published_at
+                FROM wellness.consent_documents
+                ORDER BY published_at DESC, purpose_code, version_label DESC
+                """, (rs, rowNum) -> {
+                    ConsentDocument document = new ConsentDocument();
+                    document.setId(rs.getObject("id", UUID.class));
+                    document.setPurposeCode(rs.getString("purpose_code"));
+                    document.setVersionLabel(rs.getString("version_label"));
+                    document.setTitle(rs.getString("title"));
+                    document.setBody(rs.getString("body"));
+                    document.setPublishedAt(rs.getObject("published_at", OffsetDateTime.class));
+                    return document;
+                });
+    }
+
+    @Transactional(readOnly = true)
     public ConsentDocument getCurrentDocument(String purposeCode) {
         if (purposeCode == null || purposeCode.isBlank()) {
             throw new IllegalArgumentException("Consent purpose is required.");
