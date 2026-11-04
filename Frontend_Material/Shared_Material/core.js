@@ -58,6 +58,14 @@ const CC={
         S.role=P.role;
         S.me=currentUser.email||'';
         S.name=currentUser.fullName||currentUser.email||'';
+        if (P.role==='c' && typeof API.counsellorProfile === 'function') {
+          try {
+            const counsellorProfile=await API.counsellorProfile();
+            S.name=counsellorProfile.displayName||S.name;
+          } catch(profileError) {
+            console.warn('Could not load the saved counsellor display name.', profileError);
+          }
+        }
         save();
       }catch(error){
         CC.logout();
