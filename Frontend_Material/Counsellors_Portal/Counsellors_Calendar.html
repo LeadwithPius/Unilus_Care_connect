@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en">
+<head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>UNILUS CareConnect · Calendar</title>
-    <link rel="manifest" href="../../manifest.json"><meta name="theme-color" content="#134f47">
+    <meta name="theme-color" content="#134f47">
+    <title>UNILUS CareConnect · Availability calendar</title>
+    <link rel="manifest" href="../../manifest.json">
     <link rel="stylesheet" href="../Shared_Material/styles.css">
-</head><body>
-<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in Safari or Chrome.</p></noscript>
+</head>
+<body>
+<noscript><p style="padding:20px;font-family:sans-serif">CareConnect needs JavaScript. Open this page in a supported browser.</p></noscript>
 <div class="phone" id="phone"></div>
 <script src="../Shared_Material/api.js"></script>
 <script src="../Shared_Material/core.js"></script>
@@ -13,9 +17,161 @@
 <script src="../Shared_Material/emergency_hotline.js"></script>
 <script src="../Shared_Material/password_tools.js"></script>
 <script>
-    // Calendar: month grid (frozen slots show grey during an emergency) and Google Calendar sync.
-    function view(){const d=['M','T','W','T','F','S','S'].map(x=>`<div class="h">${x}</div>`).join('');let c='';for(let i=1;i<=30;i++){const k=S.frozen?'f':(i%7==3||i%9==0)?'b':'';c+=`<div class="${k}">${i}</div>`}
-        return `<h2>Calendar & Google sync</h2><div class="card"><div class="cal">${d}${c}</div><div class="small" style="margin-top:8px">${S.frozen?'All upcoming slots are locked.':'Dark = booked, light = open.'}</div></div><div class="card"><h3>Google Calendar</h3><div class="small">Syncing availability with m.lungu@unilus.edu.zm</div><button class="btn" data-a="sync">Sync now</button></div>`}
-    function act(a){if(a==='sync')toast('Google Calendar synced.')}
-    CC.mount({role:'c',title:'Calendar & Google sync',root:'../',view,act});
-</script></body></html>
+'use strict';
+
+const counsellorCalendarState = {
+    slots: [],
+    loading: false,
+    loaded: false,
+    error: ''
+};
+
+function calendarEscape(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+}
+
+function calendarDate(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+        ? 'Invalid date'
+        : new Intl.DateTimeFormat(undefined, {
+            weekday: 'short', day: 'numeric', month: 'short',
+            year: 'numeric', hour: '2-digit', minute: '2-digit'
+        }).format(date);
+}
+
+async function loadAvailability(force = false) {
+    if (counsellorCalendarState.loading ||
+        (counsellorCalendarState.loaded && !force)) return;
+
+    counsellorCalendarState.loading = true;
+    counsellorCalendarState.error = '';
+    try {
+        const slots = await API.getAvailability(true);
+        counsellorCalendarState.slots = Array.isArray(slots) ? slots : [];
+        counsellorCalendarState.loaded = true;
+    } catch (error) {
+        counsellorCalendarState.error = error.message || 'Could not load availability.';
+    } finally {
+        counsellorCalendarState.loading = false;
+        if (window.PAGE?.title === 'Availability calendar') render();
+    }
+}
+
+function view() {
+    if (!counsellorCalendarState.loaded) {
+        return '<h2>My availability</h2><div class="card">' +
+            (counsellorCalendarState.loading ? 'Loading your saved slots…' :
+             calendarEscape(counsellorCalendarState.error || 'Loading availability…')) +
+            '<button class="btn o" data-a="refresh">Retry</button></div>';
+    }
+
+    return `
+        <h2>My availability</h2>
+        <p class="small">Add the future times when students can book a counselling session. Newly saved open slots are published to the student booking page automatically.</p>
+
+        <form class="card" id="availability-form">
+            <h3>Add an availability slot</h3>
+            <label class="small" for="slot-start">Start date and time</label>
+            <input class="fld" id="slot-start" type="datetime-local" required>
+            <label class="small" for="slot-end">End date and time</label>
+            <input class="fld" id="slot-end" type="datetime-local" required>
+            <button class="btn" id="add-slot" type="submit">Save availability</button>
+        </form>
+
+        <section class="card">
+            <h3>Upcoming open slots</h3>
+            ${counsellorCalendarState.error
+                ? `<p class="small">${calendarEscape(counsellorCalendarState.error)}</p>`
+                : ''}
+            ${counsellorCalendarState.slots.length
+                ? counsellorCalendarState.slots.map(slot => `
+                    <div class="row" style="padding:10px 0;border-bottom:1px solid #e5ece8">
+                        <div>
+                            <b>${calendarEscape(calendarDate(slot.startsAt))}</b>
+                            <div class="small">Until ${calendarEscape(calendarDate(slot.endsAt))}</div>
+                            <div class="small">Status: ${calendarEscape(slot.status)}</div>
+                        </div>
+                        <button class="pill" type="button" data-delete-slot="${calendarEscape(slot.id)}">Remove</button>
+                    </div>
+                `).join('')
+                : '<p class="small">You have no upcoming open slots. Add one above to become bookable by students.</p>'}
+            <button class="btn o" type="button" data-a="refresh">Refresh slots</button>
+        </section>
+    `;
+}
+
+async function act(action) {
+    if (action === 'refresh') {
+        counsellorCalendarState.loaded = false;
+        await loadAvailability(true);
+    }
+}
+
+function after() {
+    const form = document.getElementById('availability-form');
+    if (form) {
+        form.onsubmit = async event => {
+            event.preventDefault();
+            const startValue = document.getElementById('slot-start').value;
+            const endValue = document.getElementById('slot-end').value;
+            const startsAt = new Date(startValue);
+            const endsAt = new Date(endValue);
+
+            if (!startValue || !endValue ||
+                Number.isNaN(startsAt.getTime()) ||
+                Number.isNaN(endsAt.getTime()) ||
+                endsAt <= startsAt || startsAt <= new Date()) {
+                return toast('Choose a future start time and an end time after it.');
+            }
+
+            const button = document.getElementById('add-slot');
+            button.disabled = true;
+            button.textContent = 'Saving…';
+            try {
+                await API.addAvailability(startsAt.toISOString(), endsAt.toISOString());
+                counsellorCalendarState.loaded = false;
+                await loadAvailability(true);
+                toast('Availability saved and published for student booking.');
+            } catch (error) {
+                button.disabled = false;
+                button.textContent = 'Save availability';
+                toast(error.message || 'Could not save availability.');
+            }
+        };
+    }
+
+    document.querySelectorAll('[data-delete-slot]').forEach(button => {
+        button.onclick = async () => {
+            if (!window.confirm('Remove this availability slot?')) return;
+            button.disabled = true;
+            try {
+                await API.deleteAvailability(button.dataset.deleteSlot);
+                counsellorCalendarState.loaded = false;
+                await loadAvailability(true);
+                toast('Availability slot removed.');
+            } catch (error) {
+                button.disabled = false;
+                toast(error.message || 'Could not remove this slot.');
+            }
+        };
+    });
+
+    if (!counsellorCalendarState.loaded && !counsellorCalendarState.loading) {
+        loadAvailability();
+    }
+}
+
+CC.mount({
+    role: 'c',
+    title: 'Availability calendar',
+    root: '../',
+    view,
+    act,
+    after
+});
+</script>
+</body>
+</html>
