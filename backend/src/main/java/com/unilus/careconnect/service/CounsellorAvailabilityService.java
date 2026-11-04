@@ -173,6 +173,12 @@ public class CounsellorAvailabilityService {
             );
         }
 
+            jdbcTemplate.update(
+                    "UPDATE credentials.counsellor_profiles " +
+                    "SET accepting_appointments = TRUE WHERE id = ?",
+                    profileId
+            );
+
         return jdbcTemplate.queryForObject(
                 """
                 SELECT
@@ -245,5 +251,18 @@ public class CounsellorAvailabilityService {
                     exception
             );
         }
+
+            jdbcTemplate.update("""
+                    UPDATE credentials.counsellor_profiles cp
+                    SET accepting_appointments = EXISTS (
+                        SELECT 1
+                        FROM wellness.availability_slots a
+                        WHERE a.counsellor_profile_id = cp.id
+                          AND a.status = 'OPEN'
+                          AND a.starts_at > CURRENT_TIMESTAMP
+                    )
+                    WHERE cp.id = ?
+                    """, profileId);
+
     }
 }
