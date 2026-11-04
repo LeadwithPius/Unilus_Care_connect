@@ -2,7 +2,9 @@ package com.unilus.careconnect.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -82,8 +84,8 @@ public class AppointmentService {
             throw new IllegalStateException("This slot already has an appointment request. Please choose another time.");
         }
 
-        OffsetDateTime startsAt = (OffsetDateTime) slot.get("starts_at");
-        OffsetDateTime endsAt = (OffsetDateTime) slot.get("ends_at");
+        OffsetDateTime startsAt = toOffsetDateTime(slot.get("starts_at"), "starts_at");
+        OffsetDateTime endsAt = toOffsetDateTime(slot.get("ends_at"), "ends_at");
         if (!startsAt.isAfter(OffsetDateTime.now())) {
             throw new IllegalStateException("Past appointment slots cannot be booked.");
         }
@@ -248,6 +250,18 @@ public class AppointmentService {
             throw new IllegalStateException(
                     "Your current counselling consent is not granted. Review and accept it before booking.");
         }
+    }
+
+    private OffsetDateTime toOffsetDateTime(Object value, String columnName) {
+        if (value instanceof OffsetDateTime offsetDateTime) {
+            return offsetDateTime;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toInstant().atOffset(ZoneOffset.UTC);
+        }
+        throw new IllegalStateException(
+                "Unexpected JDBC value type for " + columnName + ": "
+                        + (value == null ? "null" : value.getClass().getName()));
     }
 
     private UUID getStudentProfileId(String email) {
