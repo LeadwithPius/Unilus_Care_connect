@@ -114,6 +114,7 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
       setDraft('')
       void loadConversations(false)
     } catch (err) {
+      if (err.status === 401 || err.status === 403) { api.logout(); navigate('/login', { replace: true }); return }
       setMessageError(err.message || 'Your message could not be sent.')
     } finally {
       setSending(false)
