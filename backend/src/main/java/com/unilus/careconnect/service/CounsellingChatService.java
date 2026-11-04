@@ -78,6 +78,7 @@ public class CounsellingChatService {
                     LIMIT 1
                 ) latest ON TRUE
                 WHERE cs.student_profile_id = ?
+                  AND a.counselling_mode = 'TRIAGE_CHAT'
                 ORDER BY COALESCE(latest.created_at, a.scheduled_start) DESC,
                          cs.id
                 """, identity.profileId());
@@ -91,6 +92,7 @@ public class CounsellingChatService {
                    upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10))
             FROM wellness.counselling_sessions cs
             WHERE cs.counsellor_profile_id = ?
+              AND a.counselling_mode = 'TRIAGE_CHAT'
             ON CONFLICT DO NOTHING
             """, identity.profileId());
 
@@ -165,7 +167,8 @@ public class CounsellingChatService {
                     ? "cs.student_profile_id" : "cs.counsellor_profile_id";
             String sql = """
                 SELECT cs.session_status AS "sessionStatus",
-                       a.status AS "appointmentStatus"
+                       a.status AS "appointmentStatus",
+                       a.counselling_mode AS "counsellingMode"
                 FROM wellness.counselling_sessions cs
                 JOIN wellness.appointments a ON a.id = cs.appointment_id
                 WHERE cs.id = ?
@@ -178,7 +181,9 @@ public class CounsellingChatService {
 
         String sessionStatus = (String) session.get("sessionStatus");
         String appointmentStatus = (String) session.get("appointmentStatus");
-        if (!List.of("SCHEDULED", "IN_PROGRESS").contains(sessionStatus)
+        String counsellingMode = (String) session.get("counsellingMode");
+        if (!"TRIAGE_CHAT".equals(counsellingMode)
+                || !List.of("SCHEDULED", "IN_PROGRESS").contains(sessionStatus)
                 || !List.of("CONFIRMED", "CHECKED_IN").contains(appointmentStatus)) {
             throw new IllegalStateException("This counselling conversation is read-only because the appointment is no longer active.");
         }
