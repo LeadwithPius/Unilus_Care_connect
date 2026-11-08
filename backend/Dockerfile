@@ -1,12 +1,13 @@
 # Build the Spring Boot application with Java 21.
+# Render uses the repository root as the Docker build context.
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /workspace
 
-COPY pom.xml ./
+COPY backend/pom.xml ./
 RUN mvn --batch-mode -DskipTests dependency:go-offline
 
-COPY src ./src
+COPY backend/src ./src
 RUN mvn --batch-mode -DskipTests clean package
 
 # Run the application on a small Java 21 runtime image.
