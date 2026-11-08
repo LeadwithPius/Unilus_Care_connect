@@ -3,7 +3,9 @@ name: Validate CareConnect
 on:
   push:
     branches:
+      - main
       - feature/react-vite-frontend
+      - chore/production-deployment-config
   pull_request:
     branches:
       - main
