@@ -2,6 +2,7 @@ package com.unilus.careconnect.service;
 
 import java.time.OffsetDateTime;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,15 +18,12 @@ public class StudentService {
 
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
-    private final EmailVerificationService emailVerificationService;
 
     public StudentService(
             JdbcTemplate jdbcTemplate,
-            PasswordEncoder passwordEncoder,
-            EmailVerificationService emailVerificationService) {
+            PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
-        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional
@@ -71,7 +69,7 @@ public class StudentService {
                     INSERT INTO credentials.users (
                         id, email, password_hash, enabled, email_verified, created_at
                     )
-                    VALUES (?, ?, ?, false, false, ?)
+                    VALUES (?, ?, ?, true, true, ?)
                     """, userId, normalizedEmail, passwordHash, createdAt);
 
             jdbcTemplate.update("""
@@ -108,8 +106,6 @@ public class StudentService {
                     VALUES (?, ?)
                     """, userId, studentRoleId);
 
-            // Send only after the account and its related records have been created.
-            emailVerificationService.sendVerificationEmail(userId, normalizedEmail);
 
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException(
@@ -120,6 +116,26 @@ public class StudentService {
         student.setId(studentProfileId);
         student.setCreatedAt(createdAt);
         return student;
+    }
+
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getCurrentProfile(String email) {
+        try {
+            return jdbcTemplate.queryForMap("""
+                    SELECT u.email,
+                           sr.full_name AS "fullName",
+                           sr.student_number AS "studentNumber",
+                           sp.created_at AS "createdAt"
+                    FROM credentials.users u
+                    JOIN credentials.student_identity_links sil ON sil.user_id = u.id
+                    JOIN wellness.student_profiles sp ON sp.id = sil.student_profile_id
+                    JOIN credentials.student_registration_details sr ON sr.user_id = u.id
+                    WHERE lower(u.email) = lower(?)
+                    """, email);
+        } catch (org.springframework.dao.EmptyResultDataAccessException exception) {
+            throw new IllegalArgumentException("No student profile is linked to this account.");
+        }
     }
 
     private void validateInput(

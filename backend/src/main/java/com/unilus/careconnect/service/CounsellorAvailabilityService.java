@@ -72,11 +72,20 @@ public class CounsellorAvailabilityService {
                         ends_at,
                         status,
                         created_at
-                    FROM wellness.availability_slots
-                    WHERE counsellor_profile_id = ?
-                      AND status = 'OPEN'
-                      AND starts_at > CURRENT_TIMESTAMP
-                    ORDER BY starts_at
+                    FROM wellness.availability_slots av
+                    WHERE av.counsellor_profile_id = ?
+                      AND av.status = 'OPEN'
+                      AND av.starts_at > CURRENT_TIMESTAMP
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM wellness.appointments booked
+                          WHERE booked.availability_slot_id = av.id
+                            AND booked.status IN (
+                                'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                'COMPLETED', 'NO_SHOW'
+                            )
+                      )
+                    ORDER BY av.starts_at
                     """;
         } else {
             sql = """
@@ -173,6 +182,12 @@ public class CounsellorAvailabilityService {
             );
         }
 
+            jdbcTemplate.update(
+                    "UPDATE credentials.counsellor_profiles " +
+                    "SET accepting_appointments = TRUE WHERE id = ?",
+                    profileId
+            );
+
         return jdbcTemplate.queryForObject(
                 """
                 SELECT
@@ -245,5 +260,18 @@ public class CounsellorAvailabilityService {
                     exception
             );
         }
+
+            jdbcTemplate.update("""
+                    UPDATE credentials.counsellor_profiles cp
+                    SET accepting_appointments = EXISTS (
+                        SELECT 1
+                        FROM wellness.availability_slots a
+                        WHERE a.counsellor_profile_id = cp.id
+                          AND a.status = 'OPEN'
+                          AND a.starts_at > CURRENT_TIMESTAMP
+                    )
+                    WHERE cp.id = ?
+                    """, profileId);
+
     }
 }

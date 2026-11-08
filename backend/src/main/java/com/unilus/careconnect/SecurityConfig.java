@@ -131,9 +131,28 @@ public class SecurityConfig {
                     "/api/auth/verify-email"
                 ).permitAll()
 
+                // Authenticated student profile endpoint.
+                .requestMatchers("/api/students/me")
+                    .hasRole("STUDENT")
+
                 // Administrator-only endpoints.
                 .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
+
+                // Student-facing counselling consent and directory endpoints.
+                .requestMatchers("/api/consents/**")
+                    .hasRole("STUDENT")
+
+                .requestMatchers("/api/counsellors/**")
+                    .hasRole("STUDENT")
+
+                // Counselling chat is restricted by participant role; the service
+                // additionally verifies that the authenticated profile owns each session.
+                .requestMatchers("/api/chat/student/**")
+                    .hasRole("STUDENT")
+
+                .requestMatchers("/api/chat/counsellor/**")
+                    .hasRole("COUNSELLOR")
 
                 // Counsellor triage endpoints.
                 .requestMatchers("/api/triage/counsellor/**")

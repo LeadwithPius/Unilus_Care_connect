@@ -1,10 +1,17 @@
 package com.unilus.careconnect;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,12 +31,205 @@ public class AdminController {
 
     private final CounsellorService counsellorService;
     private final ConsentService consentService;
+    private final JdbcTemplate jdbcTemplate;
 
     public AdminController(
             CounsellorService counsellorService,
-            ConsentService consentService) {
+            ConsentService consentService,
+            JdbcTemplate jdbcTemplate) {
         this.counsellorService = counsellorService;
         this.consentService = consentService;
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @GetMapping("/overview")
+    public ResponseEntity<?> overview() {
+        Map<String, Object> counts = jdbcTemplate.queryForMap("""
+                SELECT
+                    (SELECT COUNT(*) FROM credentials.student_identity_links) AS students,
+                    (SELECT COUNT(*) FROM credentials.counsellor_profiles cp
+                     JOIN credentials.users u ON u.id = cp.user_id
+                     WHERE u.enabled = TRUE) AS activeCounsellors,
+                    (SELECT COUNT(*) FROM wellness.appointments) AS appointments,
+                    (SELECT COUNT(*) FROM wellness.education_resources
+                     WHERE published = TRUE AND status = 'PUBLISHED') AS publishedResources,
+                    (SELECT COUNT(*) FROM wellness.availability_slots
+                     WHERE status = 'OPEN' AND starts_at > CURRENT_TIMESTAMP) AS openSlots
+                """);
+        List<Map<String, Object>> appointmentStatuses = jdbcTemplate.queryForList("""
+                SELECT status, COUNT(*) AS total
+                FROM wellness.appointments
+                GROUP BY status
+                ORDER BY status
+                """);
+        return ResponseEntity.ok(Map.of(
+                "counts", counts,
+                "appointmentStatuses", appointmentStatuses
+        ));
+    }
+
+    @GetMapping("/appointments")
+    public ResponseEntity<?> listAppointments() {
+        return ResponseEntity.ok(jdbcTemplate.queryForList("""
+                SELECT
+                    ap.id AS "appointmentId",
+                    ap.status,
+                    ap.counselling_mode AS "counsellingMode",
+                    ap.created_at AS "createdAt",
+                    av.starts_at AS "scheduledStart",
+                    av.ends_at AS "scheduledEnd",
+                    cp.display_name AS "counsellorName",
+                    sc.display_name AS "supportCategory"
+                FROM wellness.appointments ap
+                JOIN wellness.availability_slots av
+                  ON av.id = ap.availability_slot_id
+                JOIN credentials.counsellor_profiles cp
+                  ON cp.id = av.counsellor_profile_id
+                JOIN wellness.support_categories sc
+                  ON sc.id = ap.support_category_id
+                ORDER BY av.starts_at DESC
+                LIMIT 250
+                """));
+    }
+
+    @GetMapping("/students")
+    public ResponseEntity<?> listStudents() {
+        return ResponseEntity.ok(jdbcTemplate.queryForList("""
+                SELECT
+                    u.id AS "userId",
+                    u.email,
+                    sr.full_name AS "fullName",
+                    sr.student_number AS "studentNumber",
+                    u.enabled,
+                    u.email_verified AS "emailVerified",
+                    sr.created_at AS "registeredAt",
+                    (SELECT COUNT(*) FROM wellness.appointments ap
+                     JOIN wellness.student_profiles sp ON sp.id = ap.student_profile_id
+                     JOIN credentials.student_identity_links sil2
+                       ON sil2.student_profile_id = sp.id
+                     WHERE sil2.user_id = u.id) AS "appointmentCount"
+                FROM credentials.users u
+                JOIN credentials.student_identity_links sil ON sil.user_id = u.id
+                JOIN credentials.student_registration_details sr ON sr.user_id = u.id
+                JOIN credentials.user_roles ur ON ur.user_id = u.id
+                JOIN credentials.roles r ON r.id = ur.role_id
+                WHERE r.name = 'STUDENT'
+                ORDER BY sr.created_at DESC, lower(sr.full_name)
+                """));
+    }
+
+    @PatchMapping("/students/{userId}/status")
+    public ResponseEntity<?> updateStudentStatus(
+            @PathVariable UUID userId,
+            @RequestBody AccountStatusRequest request) {
+        if (request == null || request.enabled() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "enabled must be true or false."));
+        }
+        int updated = jdbcTemplate.update("""
+                UPDATE credentials.users u
+                SET enabled = ?
+                WHERE u.id = ?
+                  AND EXISTS (
+                    SELECT 1 FROM credentials.user_roles ur
+                    JOIN credentials.roles r ON r.id = ur.role_id
+                    WHERE ur.user_id = u.id AND r.name = 'STUDENT'
+                  )
+                """, request.enabled(), userId);
+        if (updated != 1) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Student account not found."));
+        }
+        return ResponseEntity.ok(Map.of("userId", userId, "enabled", request.enabled()));
+    }
+
+    @PatchMapping("/counsellors/{userId}/status")
+    public ResponseEntity<?> updateCounsellorStatus(
+            @PathVariable UUID userId,
+            @RequestBody AccountStatusRequest request) {
+        if (request == null || request.enabled() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "enabled must be true or false."));
+        }
+        int updated = jdbcTemplate.update("""
+                UPDATE credentials.users u
+                SET enabled = ?
+                WHERE u.id = ?
+                  AND EXISTS (
+                    SELECT 1 FROM credentials.user_roles ur
+                    JOIN credentials.roles r ON r.id = ur.role_id
+                    WHERE ur.user_id = u.id AND r.name = 'COUNSELLOR'
+                  )
+                """, request.enabled(), userId);
+        if (updated != 1) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Counsellor account not found."));
+        }
+        if (!request.enabled()) {
+            jdbcTemplate.update("""
+                    UPDATE credentials.counsellor_profiles
+                    SET accepting_appointments = FALSE
+                    WHERE user_id = ?
+                    """, userId);
+        }
+        return ResponseEntity.ok(Map.of("userId", userId, "enabled", request.enabled()));
+    }
+
+    @GetMapping("/consent-documents")
+    public ResponseEntity<?> listConsentDocuments() {
+        return ResponseEntity.ok(consentService.listDocuments());
+    }
+
+    @GetMapping("/counsellors")
+    public ResponseEntity<List<AdminCounsellorEntry>> listCounsellors() {
+        List<AdminCounsellorEntry> counsellors = jdbcTemplate.query(
+                """
+                SELECT
+                    cp.id AS profile_id,
+                    u.id AS user_id,
+                    u.email,
+                    cp.display_name,
+                    cp.professional_title,
+                    cp.biography,
+                    u.enabled,
+                    u.email_verified,
+                    cp.accepting_appointments,
+                    cp.created_at,
+                    (
+                        SELECT COUNT(*)
+                        FROM wellness.availability_slots av
+                        WHERE av.counsellor_profile_id = cp.id
+                          AND av.status = 'OPEN'
+                          AND av.starts_at > CURRENT_TIMESTAMP
+                    ) AS open_slots,
+                    (
+                        SELECT COUNT(*)
+                        FROM wellness.appointments ap
+                        JOIN wellness.availability_slots av2
+                          ON av2.id = ap.availability_slot_id
+                        WHERE av2.counsellor_profile_id = cp.id
+                    ) AS appointment_count
+                FROM credentials.counsellor_profiles cp
+                JOIN credentials.users u ON u.id = cp.user_id
+                JOIN credentials.user_roles ur ON ur.user_id = u.id
+                JOIN credentials.roles r ON r.id = ur.role_id
+                WHERE r.name = 'COUNSELLOR'
+                ORDER BY cp.created_at DESC, cp.display_name
+                """,
+                (rs, rowNum) -> new AdminCounsellorEntry(
+                        rs.getObject("profile_id", UUID.class),
+                        rs.getObject("user_id", UUID.class),
+                        rs.getString("email"),
+                        rs.getString("display_name"),
+                        rs.getString("professional_title"),
+                        rs.getString("biography"),
+                        rs.getBoolean("enabled"),
+                        rs.getBoolean("email_verified"),
+                        rs.getBoolean("accepting_appointments"),
+                        rs.getObject("created_at", OffsetDateTime.class),
+                        rs.getLong("open_slots"),
+                        rs.getLong("appointment_count")
+                )
+        );
+        return ResponseEntity.ok(counsellors);
     }
 
     @PostMapping("/counsellors")
@@ -69,4 +269,21 @@ public class AdminController {
                     .body(Map.of("error", exception.getMessage()));
         }
     }
+
+    public record AccountStatusRequest(Boolean enabled) {}
+
+    public record AdminCounsellorEntry(
+            UUID profileId,
+            UUID userId,
+            String email,
+            String displayName,
+            String professionalTitle,
+            String biography,
+            boolean enabled,
+            boolean emailVerified,
+            boolean acceptingAppointments,
+            OffsetDateTime createdAt,
+            long openSlots,
+            long appointmentCount
+    ) {}
 }

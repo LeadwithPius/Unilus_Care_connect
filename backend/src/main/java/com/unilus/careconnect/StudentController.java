@@ -2,6 +2,9 @@ package com.unilus.careconnect;
 
 import java.util.Map;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +28,17 @@ public class StudentController {
         this.studentService = studentService;
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(Authentication authentication) {
+        try {
+            return ResponseEntity.ok(
+                    studentService.getCurrentProfile(authentication.getName()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> registerStudent(
             @Valid @RequestBody StudentRegistrationRequest request) {
@@ -38,7 +52,7 @@ public class StudentController {
             );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "message", "Registration received. Please verify your university email.",
+                "message", "Your account has been created. You can now log in.",
                 "studentId", student.getId(),
                 "fullName", request.getFullName(),
                 "email", request.getEmail(),

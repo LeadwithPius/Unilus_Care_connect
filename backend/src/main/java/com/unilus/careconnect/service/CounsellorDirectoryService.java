@@ -29,12 +29,29 @@ public class CounsellorDirectoryService {
                             cp.id,
                             cp.display_name,
                             cp.professional_title,
-                            cp.biography
+                            cp.biography,
+                            cp.accepting_appointments
                         FROM credentials.counsellor_profiles cp
                         JOIN credentials.users u
                             ON u.id = cp.user_id
-                        WHERE cp.accepting_appointments = TRUE
-                          AND u.enabled = TRUE
+                        WHERE u.enabled = TRUE
+                          AND cp.accepting_appointments = TRUE
+                          AND EXISTS (
+                              SELECT 1
+                              FROM wellness.availability_slots av
+                              WHERE av.counsellor_profile_id = cp.id
+                                AND av.status = 'OPEN'
+                                AND av.starts_at > CURRENT_TIMESTAMP
+                                AND NOT EXISTS (
+                                    SELECT 1
+                                    FROM wellness.appointments booked
+                                    WHERE booked.availability_slot_id = av.id
+                                      AND booked.status IN (
+                                          'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                          'COMPLETED', 'NO_SHOW'
+                                      )
+                                )
+                          )
                         ORDER BY cp.display_name
                         """,
                         (rs, rowNum) ->
@@ -51,7 +68,8 @@ public class CounsellorDirectoryService {
                                         ),
                                         rs.getString(
                                                 "biography"
-                                        )
+                                        ),
+                                        rs.getBoolean("accepting_appointments")
                                 )
                 );
 
@@ -62,14 +80,23 @@ public class CounsellorDirectoryService {
                             jdbcTemplate.query(
                                     """
                                     SELECT
-                                        id,
-                                        starts_at,
-                                        ends_at
-                                    FROM wellness.availability_slots
-                                    WHERE counsellor_profile_id = ?
-                                      AND status = 'OPEN'
-                                      AND starts_at > CURRENT_TIMESTAMP
-                                    ORDER BY starts_at
+                                        av.id,
+                                        av.starts_at,
+                                        av.ends_at
+                                    FROM wellness.availability_slots av
+                                    WHERE av.counsellor_profile_id = ?
+                                      AND av.status = 'OPEN'
+                                      AND av.starts_at > CURRENT_TIMESTAMP
+                                      AND NOT EXISTS (
+                                          SELECT 1
+                                          FROM wellness.appointments booked
+                                          WHERE booked.availability_slot_id = av.id
+                                            AND booked.status IN (
+                                                'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                                'COMPLETED', 'NO_SHOW'
+                                            )
+                                      )
+                                    ORDER BY av.starts_at
                                     LIMIT 20
                                     """,
                                     (rs, rowNum) ->
@@ -94,9 +121,6 @@ public class CounsellorDirectoryService {
 
                     return entry;
                 })
-                .filter(entry ->
-                        !entry.getAvailability().isEmpty()
-                )
                 .toList();
     }
 
@@ -106,6 +130,7 @@ public class CounsellorDirectoryService {
         private final String fullName;
         private final String professionalTitle;
         private final String biography;
+        private final boolean acceptingAppointments;
 
         private List<AvailabilityEntry> availability;
 
@@ -113,12 +138,14 @@ public class CounsellorDirectoryService {
                 UUID profileId,
                 String fullName,
                 String professionalTitle,
-                String biography) {
+                String biography,
+                boolean acceptingAppointments) {
 
             this.profileId = profileId;
             this.fullName = fullName;
             this.professionalTitle = professionalTitle;
             this.biography = biography;
+            this.acceptingAppointments = acceptingAppointments;
         }
 
         public UUID getProfileId() {
@@ -135,6 +162,10 @@ public class CounsellorDirectoryService {
 
         public String getBiography() {
             return biography;
+        }
+
+        public boolean isAcceptingAppointments() {
+            return acceptingAppointments;
         }
 
         public List<AvailabilityEntry> getAvailability() {

@@ -17,15 +17,12 @@ public class CounsellorService {
 
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
-    private final EmailVerificationService emailVerificationService;
 
     public CounsellorService(
             JdbcTemplate jdbcTemplate,
-            PasswordEncoder passwordEncoder,
-            EmailVerificationService emailVerificationService) {
+            PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
-        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional
@@ -60,7 +57,7 @@ public class CounsellorService {
                     INSERT INTO credentials.users (
                         id, email, password_hash, enabled, email_verified, created_at
                     )
-                    VALUES (?, ?, ?, false, false, ?)
+                    VALUES (?, ?, ?, true, true, ?)
                     """, userId, normalizedEmail, passwordHash, createdAt);
 
             Short counsellorRoleId = jdbcTemplate.queryForObject("""
@@ -92,8 +89,7 @@ public class CounsellorService {
                     normalizeNullable(biography),
                     createdAt);
 
-            // Counsellor accounts remain disabled until their email is verified.
-            emailVerificationService.sendVerificationEmail(userId, normalizedEmail);
+            // Accounts created by an administrator are active immediately; no verification email is required.
 
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException(

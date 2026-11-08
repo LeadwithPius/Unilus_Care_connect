@@ -1,11 +1,13 @@
 package com.unilus.careconnect;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,9 +25,23 @@ import com.unilus.careconnect.service.AppointmentService;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final JdbcTemplate jdbcTemplate;
 
-    public AppointmentController(AppointmentService appointmentService) {
+    public AppointmentController(
+            AppointmentService appointmentService,
+            JdbcTemplate jdbcTemplate) {
         this.appointmentService = appointmentService;
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<Map<String, Object>>> getSupportCategories() {
+        return ResponseEntity.ok(jdbcTemplate.queryForList("""
+                SELECT id, code, display_name AS "displayName", description
+                FROM wellness.support_categories
+                WHERE active = TRUE
+                ORDER BY display_order, display_name
+                """));
     }
 
     @PostMapping
@@ -39,7 +55,8 @@ public class AppointmentController {
                     request.getAvailabilitySlotId(),
                     request.getSupportCategoryCode(),
                     request.getCounsellingMode(),
-                    request.getAlternativeModeReason()
+                    request.getAlternativeModeReason(),
+                    request.getConsentDocumentId()
             );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(

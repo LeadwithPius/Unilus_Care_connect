@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -18,7 +19,11 @@ public class CounsellorAppointmentService {
         this.jdbc = jdbc;
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Counsellors receive a stable, counsellor-scoped pseudonym for each student.
+     * Identity fields are deliberately excluded from this query and response.
+     */
+    @Transactional
     public List<Map<String, Object>> listAppointments(String email, String status) {
         UUID counsellorId = counsellorId(email);
         String normalized = status == null || status.isBlank()
@@ -28,7 +33,23 @@ public class CounsellorAppointmentService {
                 "REBOOKING_REQUIRED").contains(normalized)) {
             throw new IllegalArgumentException("Invalid appointment status filter.");
         }
-        return jdbc.queryForList("""
+
+        // Generate aliases only within this counsellor's workspace. The same
+        // student receives a different reference for a different counsellor.
+        jdbc.update("""
+            INSERT INTO wellness.counsellor_student_aliases
+                (counsellor_profile_id, student_profile_id, alias_code)
+            SELECT DISTINCT
+                   ?,
+                   a.student_profile_id,
+                   upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10))
+            FROM wellness.appointments a
+            JOIN wellness.availability_slots av ON av.id = a.availability_slot_id
+            WHERE av.counsellor_profile_id = ?
+            ON CONFLICT DO NOTHING
+            """, counsellorId, counsellorId);
+
+        StringBuilder sql = new StringBuilder("""
             SELECT a.id AS "appointmentId",
                    a.status,
                    a.counselling_mode AS "counsellingMode",
@@ -37,23 +58,35 @@ public class CounsellorAppointmentService {
                    a.scheduled_end AS "scheduledEnd",
                    a.created_at AS "requestedAt",
                    a.support_category_id AS "supportCategoryId",
-                   sr.full_name AS "studentName",
-                   sr.student_number AS "studentNumber",
+                   sc.display_name AS "supportCategory",
+                   'Student #' || alias.alias_code AS "studentReference",
                    cs.id AS "counsellingSessionId",
                    cs.session_status AS "sessionStatus"
             FROM wellness.appointments a
             JOIN wellness.availability_slots av ON av.id = a.availability_slot_id
-            JOIN credentials.counsellor_profiles cp ON cp.id = av.counsellor_profile_id
-            LEFT JOIN credentials.student_identity_links sil
-              ON sil.student_profile_id = a.student_profile_id
-            LEFT JOIN credentials.student_registration_details sr
-              ON sr.user_id = sil.user_id
+            JOIN wellness.counsellor_student_aliases alias
+              ON alias.counsellor_profile_id = av.counsellor_profile_id
+             AND alias.student_profile_id = a.student_profile_id
+            LEFT JOIN wellness.support_categories sc
+              ON sc.id = a.support_category_id
             LEFT JOIN wellness.counselling_sessions cs ON cs.appointment_id = a.id
-            WHERE cp.id = ?
-              AND (? IS NULL OR a.status = ?)
+            WHERE av.counsellor_profile_id = ?
+            """);
+
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(counsellorId);
+
+        if (normalized != null) {
+            sql.append(" AND a.status = ?");
+            parameters.add(normalized);
+        }
+
+        sql.append("""
             ORDER BY a.scheduled_start ASC, a.created_at ASC
             LIMIT 200
-            """, counsellorId, normalized, normalized);
+            """);
+
+        return jdbc.queryForList(sql.toString(), parameters.toArray());
     }
 
     @Transactional
