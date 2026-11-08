@@ -13,7 +13,7 @@ Create a Docker Web Service connected to this repository:
 - Branch: `main`
 - Root directory: leave blank (repository root)
 - Dockerfile path: `backend/Dockerfile`
-- Docker build context: `backend`
+- Docker build context: repository root (the Dockerfile copies from `backend/`)
 - Health check path: `/api/health`
 
 Set the following environment variables in Render:
