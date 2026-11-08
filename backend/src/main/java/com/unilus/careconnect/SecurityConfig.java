@@ -1,7 +1,9 @@
 package com.unilus.careconnect;
 
+import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,6 +24,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${careconnect.security.cors.allowed-origins}")
+    private String allowedOrigins;
 
     /**
      * Hashes passwords for student, counsellor, and administrator accounts.
@@ -57,41 +62,28 @@ public class SecurityConfig {
     }
 
     /**
-     * Allows the local CareConnect frontend to call the Spring Boot API.
-     *
-     * Only the explicitly listed local development origins are allowed.
+     * Allows only the exact browser origins configured for this environment.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+
         CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173"
-        ));
-
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "PATCH",
-                "DELETE",
-                "OPTIONS"
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
-
         configuration.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "Origin"
+                "Authorization", "Content-Type", "Accept", "Origin"
         ));
-
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
-
         source.registerCorsConfiguration("/api/**", configuration);
 
         return source;
@@ -102,26 +94,13 @@ public class SecurityConfig {
             throws Exception {
 
         http
-            // Apply the CORS configuration before authorization checks.
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
             .csrf(csrf -> csrf.disable())
-
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
             .authorizeHttpRequests(auth -> auth
-
-                // Allow browser preflight requests without authentication.
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                // Public health check.
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/health"
-                ).permitAll()
-
-                // Public authentication and account-recovery endpoints.
+                .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/auth/login",
@@ -130,67 +109,29 @@ public class SecurityConfig {
                     "/api/auth/reset-password",
                     "/api/auth/verify-email"
                 ).permitAll()
-
-                // Authenticated student profile endpoint.
-                .requestMatchers("/api/students/me")
-                    .hasRole("STUDENT")
-
-                // Administrator-only endpoints.
-                .requestMatchers("/api/admin/**")
-                    .hasRole("ADMIN")
-
-                // Student-facing counselling consent and directory endpoints.
-                .requestMatchers("/api/consents/**")
-                    .hasRole("STUDENT")
-
-                .requestMatchers("/api/counsellors/**")
-                    .hasRole("STUDENT")
-
-                // Counselling chat is restricted by participant role; the service
-                // additionally verifies that the authenticated profile owns each session.
-                .requestMatchers("/api/chat/student/**")
-                    .hasRole("STUDENT")
-
-                .requestMatchers("/api/chat/counsellor/**")
-                    .hasRole("COUNSELLOR")
-
-                // Counsellor triage endpoints.
-                .requestMatchers("/api/triage/counsellor/**")
-                    .hasRole("COUNSELLOR")
-
-                // Student triage endpoints.
-                .requestMatchers("/api/triage/**")
-                    .hasRole("STUDENT")
-
-                // Counsellor-only endpoints.
-                .requestMatchers("/api/counsellor/**")
-                    .hasRole("COUNSELLOR")
-
-                // Student-only endpoints.
+                .requestMatchers("/api/students/me").hasRole("STUDENT")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/consents/**").hasRole("STUDENT")
+                .requestMatchers("/api/counsellors/**").hasRole("STUDENT")
+                .requestMatchers("/api/chat/student/**").hasRole("STUDENT")
+                .requestMatchers("/api/chat/counsellor/**").hasRole("COUNSELLOR")
+                .requestMatchers("/api/triage/counsellor/**").hasRole("COUNSELLOR")
+                .requestMatchers("/api/triage/**").hasRole("STUDENT")
+                .requestMatchers("/api/counsellor/**").hasRole("COUNSELLOR")
                 .requestMatchers(
                     "/api/appointments/**",
                     "/api/education/**",
                     "/api/game/**"
                 ).hasRole("STUDENT")
-
-                // Other authentication endpoints require authentication.
-                .requestMatchers("/api/auth/**")
-                    .authenticated()
-
-                // All remaining endpoints require authentication.
+                .requestMatchers("/api/auth/**").authenticated()
                 .anyRequest().authenticated()
             )
-
-            // JWT authentication; no HTTP Basic or form login.
             .httpBasic(basic -> basic.disable())
             .formLogin(form -> form.disable())
-
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .jwtAuthenticationConverter(
-                        jwtAuthenticationConverter()
-                    )
-                )
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(
+                    jwtAuthenticationConverter()
+                ))
             );
 
         return http.build();

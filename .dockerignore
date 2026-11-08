@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.vscode
+**/target
+**/build
+frontend/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+*.log

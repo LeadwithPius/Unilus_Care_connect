@@ -3,7 +3,9 @@ name: Validate CareConnect
 on:
   push:
     branches:
+      - main
       - feature/react-vite-frontend
+      - chore/production-deployment-config
   pull_request:
     branches:
       - main
@@ -66,3 +68,12 @@ jobs:
         run: npm run lint
       - name: Build production frontend
         run: npm run build
+
+  docker:
+    name: Build production backend Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build --file backend/Dockerfile --tag careconnect-api:ci .
