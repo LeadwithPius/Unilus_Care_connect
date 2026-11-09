@@ -218,7 +218,10 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
             <div><strong>{selected.participantName}</strong><small>{formatConversationDate(selected.scheduledStart)} · {String(selected.sessionStatus || '').replaceAll('_', ' ')}</small></div>
             <span className={`care-chat-state${selected.canSend ? ' is-open' : ''}`}>{selected.canSend ? 'Open' : 'Read only'}</span>
           </header>
-          <div className="care-chat-messages" ref={messagesContainerRef} onScroll={event => {\n            const element = event.currentTarget\n            wasAtBottomRef.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80\n          }} aria-live="polite">
+          <div className="care-chat-messages" ref={messagesContainerRef} onScroll={event => {
+            const element = event.currentTarget
+            wasAtBottomRef.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80
+          }} aria-live="polite">
             {messagesLoading && !messages.length ? <div className="care-chat-empty-small"><LoaderCircle className="journey-spin" size={18} /> Loading messages…</div>
               : messages.length ? messages.map(message => (
                 <article className={`care-chat-message${message.mine ? ' is-mine' : ''}`} key={message.messageId}>
