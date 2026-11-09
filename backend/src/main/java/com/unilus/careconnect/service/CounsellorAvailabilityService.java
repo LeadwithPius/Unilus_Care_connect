@@ -96,9 +96,18 @@ public class CounsellorAvailabilityService {
                         ends_at,
                         status,
                         created_at
-                    FROM wellness.availability_slots
-                    WHERE counsellor_profile_id = ?
-                    ORDER BY starts_at
+                    FROM wellness.availability_slots av
+                    WHERE av.counsellor_profile_id = ?
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM wellness.appointments booked
+                          WHERE booked.availability_slot_id = av.id
+                            AND booked.status IN (
+                                'REQUESTED', 'CONFIRMED', 'CHECKED_IN',
+                                'COMPLETED', 'NO_SHOW'
+                            )
+                      )
+                    ORDER BY av.starts_at
                     """;
         }
 
