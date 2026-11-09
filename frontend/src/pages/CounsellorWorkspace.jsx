@@ -82,7 +82,7 @@ export default function CounsellorWorkspace() {
   const [appointments, setAppointments] = useState([])
   const [availability, setAvailability] = useState([])
   const [loadedAt, setLoadedAt] = useState(0)
-  const [filter, setFilter] = useState('ALL')
+  const [filter, setFilter] = useState('ACTIVE')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState('')
   const [savingAvailability, setSavingAvailability] = useState(false)
@@ -155,10 +155,13 @@ export default function CounsellorWorkspace() {
   // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void loadWorkspace() }, [loadWorkspace])
 
-  const visibleAppointments = useMemo(() => filter === 'ALL'
-    ? appointments
-    : appointments.filter(item => String(item.status).toUpperCase() === filter),
-  [appointments, filter])
+  const visibleAppointments = useMemo(() => {
+    if (filter === 'ACTIVE') {
+      return appointments.filter(item => ['REQUESTED', 'CONFIRMED', 'CHECKED_IN'].includes(String(item.status).toUpperCase()))
+    }
+    if (filter === 'ALL') return appointments
+    return appointments.filter(item => String(item.status).toUpperCase() === filter)
+  }, [appointments, filter])
 
   const pendingCount = appointments.filter(item => item.status === 'REQUESTED').length
   const activeCount = appointments.filter(item => ['CONFIRMED', 'CHECKED_IN'].includes(item.status)).length
@@ -313,7 +316,7 @@ export default function CounsellorWorkspace() {
     <section className="counsellor-section">
       <div className="counsellor-section-heading"><div><span>APPOINTMENT MANAGEMENT</span><h2>Student requests & sessions</h2></div><button type="button" className="counsellor-refresh" onClick={loadWorkspace}><RefreshCw size={15} /> Refresh</button></div>
       <div className="counsellor-filters" role="group" aria-label="Filter appointments">
-        {['ALL', 'REQUESTED', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED', 'REJECTED', 'NO_SHOW'].map(status => <button key={status} type="button" className={filter === status ? 'is-active' : ''} onClick={() => setFilter(status)}>{status.replaceAll('_', ' ')}</button>)}
+        {['ACTIVE', 'ALL', 'REQUESTED', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED', 'REJECTED', 'NO_SHOW'].map(status => <button key={status} type="button" className={filter === status ? 'is-active' : ''} onClick={() => setFilter(status)}>{status.replaceAll('_', ' ')}</button>)}
       </div>
       {visibleAppointments.length ? <div className="counsellor-appointment-grid">
         {visibleAppointments.map(appointment => <AppointmentCard key={appointment.appointmentId} appointment={appointment} onDecision={handleDecision} onAttendance={handleAttendance} busy={busyId === appointment.appointmentId} />)}
