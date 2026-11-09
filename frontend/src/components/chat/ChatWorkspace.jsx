@@ -36,7 +36,9 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [messageError, setMessageError] = useState('')
-  const bottomRef = useRef(null)
+  const messagesContainerRef = useRef(null)
+  const wasAtBottomRef = useRef(true)
+  const lastRenderedMessageIdRef = useRef(null)
   const activeConversationRef = useRef('')
   const selected = useMemo(
     () => conversations.find(item => item.conversationId === selectedId) || null,
@@ -72,7 +74,16 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
     try {
       const result = await api.chatMessages(role, conversationId)
       if (activeConversationRef.current === conversationId) {
-        setMessages(Array.isArray(result) ? result : [])
+        const incoming = Array.isArray(result) ? result : []
+        setMessages(current => {
+          const unchanged = current.length === incoming.length
+            && current.every((message, index) => (
+              message.messageId === incoming[index]?.messageId
+              && message.content === incoming[index]?.content
+              && message.createdAt === incoming[index]?.createdAt
+            ))
+          return unchanged ? current : incoming
+        })
         setMessageError('')
       }
     } catch (err) {
@@ -119,7 +130,17 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
   }, [loadMessages, selectedId])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    if (!messages.length) {
+      lastRenderedMessageIdRef.current = null
+      return
+    }
+    const latestMessageId = messages[messages.length - 1]?.messageId
+    const isNewMessage = latestMessageId && latestMessageId !== lastRenderedMessageIdRef.current
+    if (isNewMessage && wasAtBottomRef.current) {
+      const container = messagesContainerRef.current
+      if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+    }
+    lastRenderedMessageIdRef.current = latestMessageId
   }, [messages])
 
   async function sendMessage(event) {
@@ -173,6 +194,8 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
               onClick={() => {
                 activeConversationRef.current = item.conversationId
                 setMessages([])
+                lastRenderedMessageIdRef.current = null
+                wasAtBottomRef.current = true
                 setMessageError('')
                 setSelectedId(item.conversationId)
               }}
@@ -195,14 +218,13 @@ export default function ChatWorkspace({ role = 'STUDENT', embedded = false }) {
             <div><strong>{selected.participantName}</strong><small>{formatConversationDate(selected.scheduledStart)} · {String(selected.sessionStatus || '').replaceAll('_', ' ')}</small></div>
             <span className={`care-chat-state${selected.canSend ? ' is-open' : ''}`}>{selected.canSend ? 'Open' : 'Read only'}</span>
           </header>
-          <div className="care-chat-messages" aria-live="polite">
+          <div className="care-chat-messages" ref={messagesContainerRef} onScroll={event => {\n            const element = event.currentTarget\n            wasAtBottomRef.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80\n          }} aria-live="polite">
             {messagesLoading && !messages.length ? <div className="care-chat-empty-small"><LoaderCircle className="journey-spin" size={18} /> Loading messages…</div>
               : messages.length ? messages.map(message => (
                 <article className={`care-chat-message${message.mine ? ' is-mine' : ''}`} key={message.messageId}>
                   <div><p>{message.content}</p><time>{formatMessageTime(message.createdAt)}</time></div>
                 </article>
               )) : <div className="care-chat-first-message"><MessageCircle size={27} /><strong>This is your private conversation</strong><p>You can use this space to coordinate your confirmed counselling session. If you need urgent help, do not wait for a chat reply.</p></div>}
-            <div ref={bottomRef} />
           </div>
           <ChatNotice>{messageError}</ChatNotice>
           {selected.canSend ? <form className="care-chat-composer" onSubmit={sendMessage}>
