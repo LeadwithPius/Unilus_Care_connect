@@ -122,6 +122,8 @@ public class CounsellingChatService {
             ) latest ON TRUE
             WHERE cs.counsellor_profile_id = ?
               AND a.counselling_mode = 'TRIAGE_CHAT'
+              AND cs.session_status IN ('SCHEDULED', 'IN_PROGRESS')
+              AND a.status IN ('CONFIRMED', 'CHECKED_IN')
             ORDER BY COALESCE(latest.created_at, a.scheduled_start) DESC,
                      cs.id
             """, identity.profileId());
